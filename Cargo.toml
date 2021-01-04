@@ -1,0 +1,18 @@
+[package]
+name = "ndn-certification-agent"
+version = "0.1.0"
+authors = ["Filippo Berto <berto.f@protonmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-std = {version = "1", features = ["attributes"]}
+async-trait = "0.1"
+chrono = {version = "0.4", features = ["serde"]}
+futures = "0.3"
+protobuf = "2.18"
+serde = {version = "1.0", features = ["derive"]}
+
+[build-dependencies]
+protoc-rust = "2.18"
