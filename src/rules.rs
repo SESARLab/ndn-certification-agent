@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use futures::future::TryFuture;
 use std::error::Error;
 use crate::metrics::Measurement;
