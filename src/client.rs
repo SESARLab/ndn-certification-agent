@@ -23,6 +23,9 @@ pub enum Error {
     /// No route
     #[error("{0}")]
     Nack(String),
+    /// Error during response parsing
+    #[error("{0}")]
+    ParsingError(String),
     /// Generic IO error
     #[error(transparent)]
     IoError(#[from] io::Error),
@@ -59,6 +62,14 @@ impl Request {
                 code => unimplemented!("code: {:?} - error: {}", code, err),
             })
         }
+    }
+
+    pub async fn response() -> Result<response::Response, Error> {
+        let res_string = Request::execute().await?;
+        let (_input, res) = response::Response::parse(&res_string)
+            .map_err(|e| Error::ParsingError(format!("{}", e)))?;
+        debug_assert!(_input.trim().is_empty());
+        Ok(res)
     }
 }
 
