@@ -5,9 +5,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Measurement<M>{
-	timestamp: DateTime<Utc>,
-	data: M
+pub struct Measurement<M> {
+    timestamp: DateTime<Utc>,
+    data: M,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

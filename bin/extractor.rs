@@ -1,12 +1,37 @@
 use async_std::prelude::*;
+use ndn_certification_agent::command::{self, Command};
 use std::time::Duration;
-use ndn_certification_agent::{client };
 
 #[async_std::main]
 async fn main() {
-	let res = client::Request::execute()
-  	.timeout(Duration::from_millis(1000))
-  	.await
-  	.unwrap();
-	println!("{:?}", res);
+    let cmd = command::NFDStatusCommand;
+    let res: command::NFDStatusResponse = cmd
+        .response()
+        .timeout(Duration::from_millis(1000))
+        .await
+        .unwrap()
+        .unwrap();
+    println!("{:#?}", res);
+
+    let cmd = command::CertificateListCommand;
+    let res: command::CertificateListResponse = cmd
+        .response()
+        .timeout(Duration::from_millis(1000))
+        .await
+        .unwrap()
+        .unwrap();
+    println!("{:#?}", res);
+
+    let res = futures::future::join_all(res.certificates.iter().cloned().map(move |c| async {
+        let cmd = command::CertificateInfoCommand {
+            certificate: c.certificate,
+        };
+        cmd.response()
+            .timeout(Duration::from_millis(1000))
+            .await
+            .unwrap()
+    }))
+    .await;
+
+    println!("{:#?}", res)
 }
