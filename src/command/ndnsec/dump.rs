@@ -1,16 +1,16 @@
+use crate::command::Error;
+use chrono::{DateTime, TimeZone, Utc};
 use nom::{
     bytes::complete::{tag, take, take_until},
     character::complete::multispace0,
     combinator::{map, map_res},
-    sequence::{delimited, pair, preceded, tuple},
     multi::many0,
-    IResult
+    sequence::{delimited, pair, preceded, tuple},
+    IResult,
 };
-use serde::{Serialize,Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use chrono::{DateTime, Utc, TimeZone};
 use std::str::FromStr;
-use crate::command::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CertificateInfo {
@@ -109,11 +109,11 @@ impl CertificateInfo {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::command::{Command, ndnsec::NDNSecCommand};
-    use std::time::Duration;
+    use crate::command::{ndnsec::NDNSecCommand, Command};
     use async_std::prelude::FutureExt;
+    use std::time::Duration;
 
-		#[test]
+    #[test]
     fn parse_example_output() {
         let output = include_str!("dump.txt");
         let (rest, parsed_output) = CertificateInfo::parse(output).unwrap();
@@ -121,15 +121,17 @@ mod test {
         println!("{:?}", parsed_output);
     }
 
-		#[ignore = "Must have a running system"]
+    #[ignore = "Must have a running system"]
     #[async_std::test]
     async fn parse_live_output() -> Result<(), Box<dyn std::error::Error>> {
-      let identity = String::from("test");
-        let output = NDNSecCommand::Dump(identity).run().timeout(Duration::from_millis(1000)).await??;
+        let identity = String::from("test");
+        let output = NDNSecCommand::Dump(identity)
+            .run()
+            .timeout(Duration::from_millis(1000))
+            .await??;
         let (rest, parsed_output) = CertificateInfo::parse(&output).unwrap();
         assert!(rest.is_empty());
         println!("{:?}", parsed_output);
         Ok(())
     }
-
 }

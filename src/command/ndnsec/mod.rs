@@ -1,8 +1,8 @@
 use super::*;
 use std::ffi::OsString;
 
-pub mod list;
 pub mod dump;
+pub mod list;
 
 pub enum NDNSecCommand {
     List,

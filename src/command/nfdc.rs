@@ -267,7 +267,7 @@ mod test {
         println!("{:#?}", parsed_output);
     }
 
-		#[ignore = "Must have a running system"]
+    #[ignore = "Must have a running system"]
     #[async_std::test]
     async fn parse_live_output() -> Result<(), Error> {
         let output = NfdcCommand::Status.run().await?;

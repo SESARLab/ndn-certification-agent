@@ -56,10 +56,10 @@ impl Certificate {
 
 #[cfg(test)]
 mod test {
-		use crate::command::ndnsec::*;
-		use super::*;
-  	use std::time::Duration;
-  	use async_std::prelude::FutureExt;
+    use super::*;
+    use crate::command::ndnsec::*;
+    use async_std::prelude::FutureExt;
+    use std::time::Duration;
 
     #[test]
     fn parse_example_output() {
@@ -69,10 +69,13 @@ mod test {
         assert_eq!(parsed_output.0, "");
     }
 
-		#[ignore = "Must have a running system"]
+    #[ignore = "Must have a running system"]
     #[async_std::test]
     async fn parse_live_output() -> Result<(), Box<dyn std::error::Error>> {
-        let output = NDNSecCommand::List.run().timeout(Duration::from_millis(1000)).await??;
+        let output = NDNSecCommand::List
+            .run()
+            .timeout(Duration::from_millis(1000))
+            .await??;
         let parsed_output = CertificateList::parse(&output).unwrap();
         println!("{:#?}", parsed_output);
         assert_eq!(parsed_output.0, "");

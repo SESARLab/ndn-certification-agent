@@ -6,10 +6,6 @@ use thiserror::Error as ThisError;
 /// Command error
 #[derive(Debug, ThisError)]
 pub enum Error {
-    /// Unspecified error
-    #[error("{0}")]
-    Error(String),
-
     /// An error occurred while executing a command
     #[error("{0}")]
     OutputError(String),
@@ -18,8 +14,8 @@ pub enum Error {
     #[error(transparent)]
     XMLParsingError(#[from] serde_xml_rs::Error),
 
-		#[error("{0}")]
-		NOMParsingError(String),
+    #[error("{0}")]
+    NOMParsingError(String),
 
     /// Generic IO error
     #[error(transparent)]
@@ -48,9 +44,8 @@ pub trait Command {
     }
 }
 
-pub mod nfdc;
 pub mod ndnsec;
-
+pub mod nfdc;
 
 // #[cfg(test)]
 // mod tests {
