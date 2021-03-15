@@ -1,0 +1,9 @@
+  /test
+  +->* /test/KEY/%A8C%0C%13%ADd%3B%9B
+       +->* /test/KEY/%A8C%0C%13%ADd%3B%9B/self/%FD%00%00%01s%BF%E4U%3C
+
+* /bertof
+  +->* /bertof/KEY/U%A8%3E%D3%D7%EF%F37
+       +->* /bertof/KEY/U%A8%3E%D3%D7%EF%F37/self/%FD%00%00%01p%99%1E%FC%F7
+
+

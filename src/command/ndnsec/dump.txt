@@ -1,0 +1,17 @@
+Certificate name:
+  /bertof/KEY/U%A8%3E%D3%D7%EF%F37/self/%FD%00%00%01p%99%1E%FC%F7
+Validity:
+  NotBefore: 19700101T000000
+  NotAfter: 20400226T024149
+Public key bits:
+  MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtjWAgV7edtZ/GaHYWQeI
+  ZDhtIMj+YjvcSbbvQqzMmjir6jNIZQcPfuXr1nDwDmsDuQsEsuYL0MboprmgqtWi
+  fALG4l2WATzf9/NQMANCfuYxlfAGoGbhLjXnUKRBQ0/hPnheBoZDKWYnp0QR70GP
+  5DGl+sOrUSOVgWTPKDeEgETod1jf1IneGOC/H61MzYWRrhO4bsqPdJDihoPevdMS
+  JUxX1HlM5VoOUYQHCWUj8nxfp0H5ex1CoA18TnO/rRl6DqnzBEFXP3+gc/mKY6Ww
+  06IekE9OLT2H/AliXim+FRu7Fuow5u7hK9tfCir7looh9fS2Q8SeSBLdUBhlX50k
+  iwIDAQAB
+Signature Information:
+  Signature Type: SignatureSha256WithRsa
+  Key Locator: Self-Signed Name=/bertof/KEY/U%A8%3E%D3%D7%EF%F37
+
