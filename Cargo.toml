@@ -17,8 +17,9 @@ protobuf = "2.18"
 thiserror = "1.0"
 serde = {version = "1.0", features = ["derive"]}
 serde-xml-rs = "0.4"
+systemstat = "0.1"
 url = {version= "2.2", features = ["serde"]}
 
-# [[bin]]
-# name = "extractor"
-# path = "bin/extractor.rs"
+[[bin]]
+name = "ca"
+path = "bin/ca.rs"

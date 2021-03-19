@@ -20,8 +20,19 @@ pub struct CertificateInfo {
     pub public_key_bits: Vec<u8>,
     pub signature_information: HashMap<String, String>,
 }
+
+impl FromStr for CertificateInfo {
+    type Err = Error;
+    fn from_str(input: &str) -> Result<Self, Error> {
+        let (rest, res) =
+            Self::parse(input).map_err(|e| Error::NOMParsingError(format!("{}", e)))?;
+        debug_assert!(rest.is_empty());
+        Ok(res)
+    }
+}
+
 impl CertificateInfo {
-    pub fn parse(input: &str) -> IResult<&str, Self> {
+    fn parse(input: &str) -> IResult<&str, Self> {
         let (input, _) = preceded(multispace0, tag("Certificate name:"))(input)?;
         let (input, certificate_name) =
             preceded(multispace0, map(take_until("\n"), String::from))(input)?;

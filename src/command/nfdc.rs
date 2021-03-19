@@ -27,6 +27,8 @@ pub struct NfdcStatus {
     pub faces: Faces,
     pub fib: Fib,
     pub rib: Rib,
+    pub cs: Cs,
+    pub strategy_choices: StrategyChoices,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -223,6 +225,7 @@ pub struct Cs {
     pub n_entries: u64,
     pub n_hits: u64,
     pub n_misses: u64,
+    pub policy_name: String,
     pub min_size: u64,
     pub max_size: u64,
     pub average_size: f64,

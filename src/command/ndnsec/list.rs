@@ -1,3 +1,4 @@
+use crate::command::Error;
 use nom::{
     bytes::complete::{is_not, tag, take_until},
     character::complete::multispace0,
@@ -7,6 +8,7 @@ use nom::{
     IResult,
 };
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CertificateList {
@@ -14,9 +16,18 @@ pub struct CertificateList {
 }
 
 impl CertificateList {
-    pub fn parse(input: &str) -> IResult<&str, Self> {
+    fn parse(input: &str) -> IResult<&str, Self> {
         let (input, certificates) = preceded(multispace0, many0(Certificate::parse))(input)?;
         Ok((input, CertificateList { certificates }))
+    }
+}
+impl FromStr for CertificateList {
+    type Err = Error;
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        let (rest, res) =
+            Self::parse(input).map_err(|e| Error::NOMParsingError(format!("{}", e)))?;
+        debug_assert!(rest.is_empty());
+        Ok(res)
     }
 }
 
@@ -64,9 +75,8 @@ mod test {
     #[test]
     fn parse_example_output() {
         let output = include_str!("list.txt");
-        let parsed_output = CertificateList::parse(output).unwrap();
+        let parsed_output = CertificateList::from_str(output).unwrap();
         println!("{:#?}", parsed_output);
-        assert_eq!(parsed_output.0, "");
     }
 
     #[ignore = "Must have a running system"]
@@ -76,9 +86,8 @@ mod test {
             .run()
             .timeout(Duration::from_millis(1000))
             .await??;
-        let parsed_output = CertificateList::parse(&output).unwrap();
+        let parsed_output = CertificateList::from_str(&output).unwrap();
         println!("{:#?}", parsed_output);
-        assert_eq!(parsed_output.0, "");
         Ok(())
     }
 }
