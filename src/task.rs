@@ -1,8 +1,5 @@
 use crate::command;
-use crate::task;
-use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use futures::future::{TryFuture, TryJoinAll};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::hash::Hash;
@@ -39,7 +36,7 @@ impl<Data> Measurement<Data> {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Evaluation {
-    pub evaluation: bool,
+    pub value: bool,
     pub index: u64,
     pub timestamp: DateTime<Utc>,
 }
@@ -47,7 +44,7 @@ pub struct Evaluation {
 impl Evaluation {
     pub fn new(evaluation: bool, index: u64) -> Self {
         Self {
-            evaluation,
+            value: evaluation,
             index,
             timestamp: Utc::now(),
         }
@@ -60,10 +57,14 @@ where
     Metrics: Hash + Eq,
     Tasks: Hash + Eq,
 {
-    pub measurements_index: HashMap<Metrics, HashMap<u64, Data>>,
-    pub measurements_timestamp: HashMap<Metrics, HashMap<DateTime<Utc>, Data>>,
-    pub evaluations_index: HashMap<Tasks, HashMap<u64, bool>>,
-    pub evaluations_timestamp: HashMap<Tasks, HashMap<DateTime<Utc>, bool>>,
+    // pub measurements_index: HashMap<Metrics, HashMap<u64, Data>>,
+    // pub measurements_timestamp: HashMap<Metrics, HashMap<DateTime<Utc>, Data>>,
+    // pub evaluations_index: HashMap<Tasks, HashMap<u64, bool>>,
+    // pub evaluations_timestamp: HashMap<Tasks, HashMap<DateTime<Utc>, bool>>,
+    pub measurements_index: HashMap<(Metrics, u64), Data>,
+    pub measurements_timestamp: HashMap<(Metrics, DateTime<Utc>), Data>,
+    pub evaluations_index: HashMap<(Tasks, u64), bool>,
+    pub evaluations_timestamp: HashMap<(Tasks, DateTime<Utc>), bool>,
 }
 
 impl<Metrics, Tasks, Data> Default for Logs<Metrics, Tasks, Data>
@@ -99,16 +100,12 @@ where
         metric: Metrics,
     ) -> Logs<Metrics, Tasks, Data> {
         let mut res = self.clone();
-        let entry = res
-            .measurements_index
-            .entry(metric.clone())
-            .or_insert_with(HashMap::new);
-        entry.insert(measurement.index, measurement.data.clone());
-        let entry = res
-            .measurements_timestamp
-            .entry(metric)
-            .or_insert_with(HashMap::new);
-        entry.insert(measurement.timestamp, measurement.data);
+        res.measurements_index.insert(
+            (metric.clone(), measurement.index),
+            measurement.data.clone(),
+        );
+        res.measurements_timestamp
+            .insert((metric, measurement.timestamp), measurement.data);
         res
     }
 
@@ -118,16 +115,10 @@ where
         task: Tasks,
     ) -> Logs<Metrics, Tasks, Data> {
         let mut res = self.clone();
-        let entry = res
-            .evaluations_index
-            .entry(task.clone())
-            .or_insert_with(HashMap::new);
-        entry.insert(evaluation.index, evaluation.evaluation);
-        let entry = res
-            .evaluations_timestamp
-            .entry(task)
-            .or_insert_with(HashMap::new);
-        entry.insert(evaluation.timestamp, evaluation.evaluation);
+        res.evaluations_index
+            .insert((task.clone(), evaluation.index), evaluation.value);
+        res.evaluations_timestamp
+            .insert((task, evaluation.timestamp), evaluation.value);
         res
     }
 
@@ -147,19 +138,15 @@ where
                 .map(|(k, v)| (k.clone(), v.clone())),
         );
         let mut evaluations_index = self.evaluations_index.clone();
-        evaluations_index.extend(
-            other
-                .evaluations_index
-                .iter()
-                .map(|(k, v)| (k.clone(), v.clone())),
-        );
+        evaluations_index.extend(other.evaluations_index.iter().map(|(k, v)| (k.clone(), *v)));
         let mut evaluations_timestamp = self.evaluations_timestamp.clone();
         evaluations_timestamp.extend(
             other
                 .evaluations_timestamp
                 .iter()
-                .map(|(k, v)| (k.clone(), v.clone())),
+                .map(|(k, v)| (k.clone(), *v)),
         );
+
         Self {
             measurements_index,
             measurements_timestamp,

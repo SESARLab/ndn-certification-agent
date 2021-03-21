@@ -1,22 +1,20 @@
 use async_std::prelude::{FutureExt as AsyncStdFutureExt, *};
 use chrono::{self, DateTime, Utc};
-use futures::future::{
-    try_join, try_join3, try_join4, try_join5, try_join_all, TryFuture, TryJoinAll,
-};
-use futures::{FutureExt, TryFutureExt};
+use futures::future::{try_join, try_join3, try_join4, try_join5, try_join_all};
+use futures::FutureExt;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::time::Duration;
 use systemstat::{Platform, System};
 
-const TIMEOUT: Duration = Duration::from_millis(1000);
-const CS_ENTRY_SIZE: u64 = 8192;
-
 use ndn_certification_agent::{
     command::{self, ndnsec, nfdc, Command},
-    task::{self, Error, Evaluation, Logging, Logs, Measurement, PacketStatistics},
+    task::{Error, Evaluation, Logging, Logs, Measurement, PacketStatistics},
 };
+
+const TIMEOUT: Duration = Duration::from_millis(1000);
+const CS_ENTRY_SIZE: u64 = 8192;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 enum Data {
@@ -425,8 +423,7 @@ where
 {
     let Logging(measurement, logs) = m2.await?;
     let data = match measurement.data {
-        Data::M2(cs_entries) if cs_entries <= 100000 => Ok(true),
-        Data::M2(_) => Ok(false),
+        Data::M2(cs_entries) => Ok(cs_entries <= 100000),
         _ => Err(Error::EvaluationError(
             "Wrong dependency task provided".to_string(),
         )),
@@ -463,33 +460,31 @@ where
 {
     let Logging(measurement, logs) = m3.await?;
 
-    let value = match (
-        index,
-        measurement.data,
-        logs.measurements_index.get(&Metrics::M3),
-    ) {
-        // Not enough measurements
-        (i, _, _) if i < 4 => Ok(false),
-        // Valid data
-        (_, Data::M3(_), Some(measurements)) => {
-            let cs_usages: Vec<u64> = (index - 4..=index)
-                .filter_map(|i| measurements.get(&i))
+    let value = match (index, measurement.data) {
+        (i, _) if i < 4 => Ok(false),
+        (_, Data::M3(_)) => {
+            let cs_usages = (index - 4..=index)
+                .filter_map(|i| logs.measurements_index.get(&(Metrics::M3, i)))
                 .filter_map(|d| if let Data::M3(v) = d { Some(v) } else { None })
-                .cloned()
-                .collect();
-            let mean = cs_usages.iter().cloned().sum::<u64>() as f64 / cs_usages.len() as f64;
-            let std_dev = (cs_usages
-                .iter()
-                .fold(0_f64, |acc, new| acc + (*new as f64 - mean).powi(2))
-                / (cs_usages.len() as u64 - 1) as f64)
-                .sqrt();
-            // Finally check if std_dev across measurements is less than 5.0
-            Ok(std_dev < 5.0f64)
+                .collect::<Vec<_>>();
+            if cs_usages.len() < 5 {
+                Ok(false)
+            } else {
+                let mean = cs_usages.iter().cloned().sum::<u64>() as f64 / cs_usages.len() as f64;
+                let std_dev = (cs_usages
+                    .iter()
+                    .fold(0_f64, |acc, new| acc + (**new as f64 - mean).powi(2))
+                    / (cs_usages.len() as u64 - 1) as f64)
+                    .sqrt();
+                // Finally check if std_dev across measurements is less than 5.0
+                Ok(std_dev < 5.0f64)
+            }
         }
         _ => Err(Error::EvaluationError(
             "Wrong dependency tasks provided".to_string(),
         )),
     }?;
+
     let evaluation = Evaluation::new(value, index);
     let logs = logs.with_evaluation(evaluation.clone(), Tasks::C5);
     Ok(Logging(evaluation, logs))
@@ -650,7 +645,7 @@ where
 {
     let (Logging(eval_1, logs_1), Logging(eval_2, logs_2), Logging(eval_3, logs_3)) =
         try_join3(c1, c2, c3).await?;
-    let value = eval_1.evaluation && eval_2.evaluation && eval_3.evaluation;
+    let value = eval_1.value && eval_2.value && eval_3.value;
     let evaluation = Evaluation::new(value, index);
     let logs = logs_1
         .merge(&logs_2)
@@ -675,13 +670,16 @@ where
         .iter()
         .all(|t| {
             logs.evaluations_timestamp
-                .get(t)
-                .map(|eval| {
-                    eval.iter()
-                        .filter(|(k, _)| **k >= (now + chrono::Duration::minutes(-10)))
-                        .all(|(_, v)| *v)
+                .iter()
+                .filter_map(|m| match m {
+                    ((task, timestamp), value)
+                        if *task == *t && *timestamp <= now + chrono::Duration::minutes(-10) =>
+                    {
+                        Some(value)
+                    }
+                    _ => None,
                 })
-                .unwrap_or(false)
+                .all(|v| *v)
         });
     let evaluation = Evaluation::new(value, index);
     let logs = logs.with_evaluation(evaluation.clone(), Tasks::R2);
@@ -696,13 +694,16 @@ where
     let now = Utc::now();
     let value = logs
         .evaluations_timestamp
-        .get(&Tasks::C8)
-        .map(|eval| {
-            eval.iter()
-                .filter(|(k, _)| **k >= (now + chrono::Duration::minutes(-10)))
-                .all(|(_, v)| *v)
+        .iter()
+        .filter_map(|m| match m {
+            ((task, timestamp), value)
+                if *task == Tasks::C8 && *timestamp >= now - chrono::Duration::minutes(-10) =>
+            {
+                Some(value)
+            }
+            _ => None,
         })
-        .unwrap_or(false);
+        .all(|v| *v);
     let evaluation = Evaluation::new(value, index);
     let logs = logs.with_evaluation(evaluation.clone(), Tasks::R3);
     Ok(Logging(evaluation, logs))
@@ -718,13 +719,16 @@ where
     let now = Utc::now();
     let value = [Tasks::C9, Tasks::C10].iter().all(|t| {
         logs.evaluations_timestamp
-            .get(t)
-            .map(|eval| {
-                eval.iter()
-                    .filter(|(k, _)| **k >= (now + chrono::Duration::minutes(-10)))
-                    .all(|(_, v)| *v)
+            .iter()
+            .filter_map(|m| match m {
+                ((task, timestamp), value)
+                    if *task == *t && *timestamp >= now - chrono::Duration::minutes(-10) =>
+                {
+                    Some(value)
+                }
+                _ => None,
             })
-            .unwrap_or(false)
+            .all(|v| *v)
     });
     let evaluation = Evaluation::new(value, index);
     let logs = logs.with_evaluation(evaluation.clone(), Tasks::R4);
@@ -741,13 +745,16 @@ where
     let now = Utc::now();
     let value = [Tasks::C11, Tasks::C12].iter().all(|t| {
         logs.evaluations_timestamp
-            .get(t)
-            .map(|eval| {
-                eval.iter()
-                    .filter(|(k, _)| **k >= (now + chrono::Duration::minutes(-10)))
-                    .all(|(_, v)| *v)
+            .iter()
+            .filter_map(|m| match m {
+                ((task, timestamp), value)
+                    if *task == *t && *timestamp >= now - chrono::Duration::minutes(-10) =>
+                {
+                    Some(value)
+                }
+                _ => None,
             })
-            .unwrap_or(false)
+            .all(|v| *v)
     });
     let evaluation = Evaluation::new(value, index);
     let logs = logs.with_evaluation(evaluation.clone(), Tasks::R5);
@@ -762,13 +769,16 @@ where
     let now = Utc::now();
     let value = logs
         .evaluations_timestamp
-        .get(&Tasks::C13)
-        .map(|eval| {
-            eval.iter()
-                .filter(|(k, _)| **k >= (now + chrono::Duration::minutes(-10)))
-                .all(|(_, v)| *v)
+        .iter()
+        .filter_map(|m| match m {
+            ((task, timestamp), value)
+                if *task == Tasks::C13 && *timestamp >= now - chrono::Duration::minutes(-10) =>
+            {
+                Some(value)
+            }
+            _ => None,
         })
-        .unwrap_or(false);
+        .all(|v| *v);
     let evaluation = Evaluation::new(value, index);
     let logs = logs.with_evaluation(evaluation.clone(), Tasks::R6);
     Ok(Logging(evaluation, logs))
@@ -782,13 +792,16 @@ where
     let now = Utc::now();
     let value = logs
         .evaluations_timestamp
-        .get(&Tasks::C14)
-        .map(|eval| {
-            eval.iter()
-                .filter(|(k, _)| **k >= (now + chrono::Duration::minutes(-10)))
-                .all(|(_, v)| *v)
+        .iter()
+        .filter_map(|m| match m {
+            ((task, timestamp), value)
+                if *task == Tasks::C14 && *timestamp >= now - chrono::Duration::minutes(-10) =>
+            {
+                Some(value)
+            }
+            _ => None,
         })
-        .unwrap_or(false);
+        .all(|v| *v);
     let evaluation = Evaluation::new(value, index);
     let logs = logs.with_evaluation(evaluation.clone(), Tasks::R7);
     Ok(Logging(evaluation, logs))
@@ -826,13 +839,16 @@ where
         .iter()
         .all(|t| {
             logs.evaluations_timestamp
-                .get(t)
-                .map(|eval| {
-                    eval.iter()
-                        .filter(|(k, _)| **k >= (now + chrono::Duration::minutes(-10)))
-                        .all(|(_, v)| *v)
+                .iter()
+                .filter_map(|m| match m {
+                    ((task, timestamp), value)
+                        if *task == *t && *timestamp >= now + chrono::Duration::minutes(-10) =>
+                    {
+                        Some(value)
+                    }
+                    _ => None,
                 })
-                .unwrap_or(false)
+                .all(|v| *v)
         });
     let evaluation = Evaluation::new(value, index);
     let logs = logs.with_evaluation(evaluation.clone(), Tasks::P1);
@@ -849,13 +865,16 @@ where
     let now = Utc::now();
     let value = [Tasks::R6, Tasks::R7].iter().all(|t| {
         logs.evaluations_timestamp
-            .get(t)
-            .map(|eval| {
-                eval.iter()
-                    .filter(|(k, _)| **k >= (now + chrono::Duration::minutes(-10)))
-                    .all(|(_, v)| *v)
+            .iter()
+            .filter_map(|m| match m {
+                ((task, timestamp), value)
+                    if *task == *t && *timestamp >= now + chrono::Duration::minutes(-10) =>
+                {
+                    Some(value)
+                }
+                _ => None,
             })
-            .unwrap_or(false)
+            .all(|v| *v)
     });
     let evaluation = Evaluation::new(value, index);
     let logs = logs.with_evaluation(evaluation.clone(), Tasks::P2);
@@ -872,13 +891,16 @@ where
     let now = Utc::now();
     let value = [Tasks::R6, Tasks::R7].iter().all(|t| {
         logs.evaluations_timestamp
-            .get(t)
-            .map(|eval| {
-                eval.iter()
-                    .filter(|(k, _)| **k >= (now + chrono::Duration::minutes(-10)))
-                    .all(|(_, v)| *v)
+            .iter()
+            .filter_map(|m| match m {
+                ((task, timestamp), value)
+                    if *task == *t && *timestamp >= now + chrono::Duration::minutes(-10) =>
+                {
+                    Some(value)
+                }
+                _ => None,
             })
-            .unwrap_or(false)
+            .all(|v| *v)
     });
     let evaluation = Evaluation::new(value, index);
     let logs = logs.with_evaluation(evaluation.clone(), Tasks::P3);
@@ -898,7 +920,7 @@ async fn main() {
     let m2_f = m2(nfd_status_f.clone(), index).shared();
     let m3_f = m3(nfd_status_f.clone(), index).shared();
     let m4_f = m4(nfd_status_f.clone(), index).shared();
-    // let m5_f = m5(nfd_status_f.clone(), index).shared();
+    let _m5_f = m5(nfd_status_f.clone(), index).shared();
     let m6_f = m6(nfd_status_f.clone(), index).shared();
     let m7_f = m7(nfd_status_f.clone(), index).shared();
     let m8_f = m8(nfd_status_f.clone(), index).shared();
@@ -942,13 +964,13 @@ async fn main() {
                 Logging(evaluation_2, logs_2),
                 Logging(evaluation_3, logs_3),
             ) = v;
-            let evaluation =
-                evaluation_1.evaluation && evaluation_2.evaluation && evaluation_3.evaluation;
-            let logs = logs_1.merge(&logs_2).merge(&logs_3);
-//             println!("{:?}", logs.evaluations_index.iter().map(|(k,v)|
-// (k,v.iter().collect::<Vec<_>>())).collect::<Vec<_>>());
-            println!("{:#?}", logs);
+            let _evaluation = evaluation_1.value && evaluation_2.value && evaluation_3.value;
+            let _logs = logs_1.merge(&logs_2).merge(&logs_3);
+            println!("{:#?}", _evaluation);
+            // println!("{:#?}", _logs);
         }
         Err(e) => eprintln!("{}", e),
     }
+
+    // println!("{:#?}", p3_f.await);
 }
