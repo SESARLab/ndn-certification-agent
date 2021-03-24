@@ -57,14 +57,22 @@ where
     Metrics: Hash + Eq,
     Tasks: Hash + Eq,
 {
-    // pub measurements_index: HashMap<Metrics, HashMap<u64, Data>>,
-    // pub measurements_timestamp: HashMap<Metrics, HashMap<DateTime<Utc>, Data>>,
-    // pub evaluations_index: HashMap<Tasks, HashMap<u64, bool>>,
-    // pub evaluations_timestamp: HashMap<Tasks, HashMap<DateTime<Utc>, bool>>,
     pub measurements_index: HashMap<(Metrics, u64), Data>,
     pub measurements_timestamp: HashMap<(Metrics, DateTime<Utc>), Data>,
     pub evaluations_index: HashMap<(Tasks, u64), bool>,
     pub evaluations_timestamp: HashMap<(Tasks, DateTime<Utc>), bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Table<Metrics, Tasks, Data>
+where
+    Metrics: Hash + Eq,
+    Tasks: Hash + Eq,
+{
+    pub measurements_index: HashMap<Metrics, HashMap<u64, Data>>,
+    pub measurements_timestamp: HashMap<Metrics, HashMap<DateTime<Utc>, Data>>,
+    pub evaluations_index: HashMap<Tasks, HashMap<u64, bool>>,
+    pub evaluations_timestamp: HashMap<Tasks, HashMap<DateTime<Utc>, bool>>,
 }
 
 impl<Metrics, Tasks, Data> Default for Logs<Metrics, Tasks, Data>
@@ -148,6 +156,51 @@ where
         );
 
         Self {
+            measurements_index,
+            measurements_timestamp,
+            evaluations_index,
+            evaluations_timestamp,
+        }
+    }
+
+    pub fn to_table(&self) -> Table<Metrics, Tasks, Data> {
+        let measurements_index = self.measurements_index.iter().fold(
+            HashMap::new(),
+            |mut acc, ((measurement, index), data)| {
+                let entry = acc.entry(measurement.clone()).or_insert_with(HashMap::new);
+                entry.insert(*index, data.clone());
+                acc
+            },
+        );
+
+        let measurements_timestamp = self.measurements_timestamp.iter().fold(
+            HashMap::new(),
+            |mut acc, ((measurement, timestamp), data)| {
+                let entry = acc.entry(measurement.clone()).or_insert_with(HashMap::new);
+                entry.insert(*timestamp, data.clone());
+                acc
+            },
+        );
+
+        let evaluations_index = self.evaluations_index.iter().fold(
+            HashMap::new(),
+            |mut acc, ((task, index), value)| {
+                let entry = acc.entry(task.clone()).or_insert_with(HashMap::new);
+                entry.insert(*index, *value);
+                acc
+            },
+        );
+
+        let evaluations_timestamp = self.evaluations_timestamp.iter().fold(
+            HashMap::new(),
+            |mut acc, ((task, timestamp), value)| {
+                let entry = acc.entry(task.clone()).or_insert_with(HashMap::new);
+                entry.insert(*timestamp, *value);
+                acc
+            },
+        );
+
+        Table {
             measurements_index,
             measurements_timestamp,
             evaluations_index,
