@@ -4,19 +4,19 @@ use std::ffi::OsString;
 pub mod dump;
 pub mod list;
 
-pub enum NDNSecCommand {
+pub enum NdnSecCommand {
     List,
     Dump(String),
 }
 
-impl Command for NDNSecCommand {
+impl Command for NdnSecCommand {
     fn to_command(&self) -> Vec<OsString> {
         match self {
-            NDNSecCommand::List => ["ndnsec", "list", "-c"]
+            NdnSecCommand::List => ["ndnsec", "list", "-c"]
                 .iter()
                 .map(OsString::from)
                 .collect(),
-            NDNSecCommand::Dump(identity) => ["ndnsec", "cert-dump", "-p", "-i", identity.as_str()]
+            NdnSecCommand::Dump(identity) => ["ndnsec", "cert-dump", "-p", "-i", identity.as_str()]
                 .iter()
                 .map(OsString::from)
                 .collect(),

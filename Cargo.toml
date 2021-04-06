@@ -27,3 +27,7 @@ url = {version= "2.2", features = ["serde"]}
 name = "ca"
 path = "bin/ca.rs"
 
+[[bin]]
+name = "ca_mut"
+path = "bin/ca_mut.rs"
+

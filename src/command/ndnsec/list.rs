@@ -25,7 +25,7 @@ impl FromStr for CertificateList {
     type Err = Error;
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         let (rest, res) =
-            Self::parse(input).map_err(|e| Error::NOMParsingError(format!("{}", e)))?;
+            Self::parse(input).map_err(|e| Error::NomParsingError(format!("{}", e)))?;
         debug_assert!(rest.is_empty());
         Ok(res)
     }
@@ -82,7 +82,7 @@ mod test {
     #[ignore = "Must have a running system"]
     #[async_std::test]
     async fn parse_live_output() -> Result<(), Box<dyn std::error::Error>> {
-        let output = NDNSecCommand::List
+        let output = NdnSecCommand::List
             .run()
             .timeout(Duration::from_millis(1000))
             .await??;

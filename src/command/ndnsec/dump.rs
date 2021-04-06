@@ -25,7 +25,7 @@ impl FromStr for CertificateInfo {
     type Err = Error;
     fn from_str(input: &str) -> Result<Self, Error> {
         let (rest, res) =
-            Self::parse(input).map_err(|e| Error::NOMParsingError(format!("{}", e)))?;
+            Self::parse(input).map_err(|e| Error::NomParsingError(format!("{}", e)))?;
         debug_assert!(rest.is_empty());
         Ok(res)
     }
@@ -54,7 +54,7 @@ impl CertificateInfo {
                     Utc.ymd_opt(year, month, day)
                         .and_hms_opt(hour, minute, second)
                         .single()
-                        .ok_or_else(|| Error::NOMParsingError(String::from("Invalid ISO 8601")))
+                        .ok_or_else(|| Error::NomParsingError(String::from("Invalid ISO 8601")))
                 },
             ),
         )(input)?;
@@ -75,7 +75,7 @@ impl CertificateInfo {
                     Utc.ymd_opt(year, month, day)
                         .and_hms_opt(hour, minute, second)
                         .single()
-                        .ok_or_else(|| Error::NOMParsingError(String::from("Invalid ISO 8601")))
+                        .ok_or_else(|| Error::NomParsingError(String::from("Invalid ISO 8601")))
                 },
             ),
         )(input)?;
@@ -120,7 +120,7 @@ impl CertificateInfo {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::command::{ndnsec::NDNSecCommand, Command};
+    use crate::command::{ndnsec::NdnSecCommand, Command};
     use async_std::prelude::FutureExt;
     use std::time::Duration;
 
@@ -136,7 +136,7 @@ mod test {
     #[async_std::test]
     async fn parse_live_output() -> Result<(), Box<dyn std::error::Error>> {
         let identity = String::from("test");
-        let output = NDNSecCommand::Dump(identity)
+        let output = NdnSecCommand::Dump(identity)
             .run()
             .timeout(Duration::from_millis(1000))
             .await??;

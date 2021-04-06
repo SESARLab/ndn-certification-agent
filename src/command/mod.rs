@@ -12,10 +12,10 @@ pub enum Error {
 
     /// XML parsing error
     #[error("{0}")]
-    XMLParsingError(String),
+    XmlParsingError(String),
 
     #[error("{0}")]
-    NOMParsingError(String),
+    NomParsingError(String),
 
     /// Generic IO error
     #[error("{0}")]
@@ -34,7 +34,7 @@ impl From<io::Error> for Error {
 
 impl From<serde_xml_rs::Error> for Error {
     fn from(error: serde_xml_rs::Error) -> Self {
-        Error::XMLParsingError(format!("{}", error))
+        Error::XmlParsingError(format!("{}", error))
     }
 }
 

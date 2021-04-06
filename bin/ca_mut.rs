@@ -165,40 +165,56 @@ pub async fn host_total_memory() -> Result<u64, Error> {
         .map_err(Error::TaskError)
 }
 
-async fn m1<D1>(nfd_status_f: D1, index: u64, logs: Logs<Metrics, Tasks, Data>) -> MeasurementResult
+async fn m1<D1>(
+    nfd_status_f: D1,
+    index: u64,
+    mut logs: Logs<Metrics, Tasks, Data>,
+) -> MeasurementResult
 where
     D1: Future<Output = Result<nfdc::NfdcStatus, Error>>,
 {
     let res: nfdc::NfdcStatus = nfd_status_f.timeout(TIMEOUT).await??;
     let data = Data::M1(res.cs.policy_name);
     let measurement = Measurement::new(data, index);
-    let logs = logs.with_measurement(measurement.clone(), Metrics::M1);
+    logs.insert_measurement(measurement.clone(), Metrics::M1);
     Ok(Logging(measurement, logs))
 }
 
-async fn m2<D1>(nfd_status_f: D1, index: u64, logs: Logs<Metrics, Tasks, Data>) -> MeasurementResult
+async fn m2<D1>(
+    nfd_status_f: D1,
+    index: u64,
+    mut logs: Logs<Metrics, Tasks, Data>,
+) -> MeasurementResult
 where
     D1: Future<Output = Result<nfdc::NfdcStatus, Error>>,
 {
     let res: nfdc::NfdcStatus = nfd_status_f.timeout(TIMEOUT).await??;
     let data = Data::M2(res.cs.capacity);
     let measurement = Measurement::new(data, index);
-    let logs = logs.with_measurement(measurement.clone(), Metrics::M2);
+    logs.insert_measurement(measurement.clone(), Metrics::M2);
     Ok(Logging(measurement, logs))
 }
 
-async fn m3<D1>(nfd_status_f: D1, index: u64, logs: Logs<Metrics, Tasks, Data>) -> MeasurementResult
+async fn m3<D1>(
+    nfd_status_f: D1,
+    index: u64,
+    mut logs: Logs<Metrics, Tasks, Data>,
+) -> MeasurementResult
 where
     D1: Future<Output = Result<nfdc::NfdcStatus, Error>>,
 {
     let res: nfdc::NfdcStatus = nfd_status_f.timeout(TIMEOUT).await??;
     let data = Data::M3(res.cs.n_entries);
     let measurement = Measurement::new(data, index);
-    let logs = logs.with_measurement(measurement.clone(), Metrics::M3);
+    logs.insert_measurement(measurement.clone(), Metrics::M3);
     Ok(Logging(measurement, logs))
 }
 
-async fn m4<D1>(nfd_status_f: D1, index: u64, logs: Logs<Metrics, Tasks, Data>) -> MeasurementResult
+async fn m4<D1>(
+    nfd_status_f: D1,
+    index: u64,
+    mut logs: Logs<Metrics, Tasks, Data>,
+) -> MeasurementResult
 where
     D1: Future<Output = Result<nfdc::NfdcStatus, Error>>,
 {
@@ -210,11 +226,15 @@ where
         std_dev: res.cs.std_dev_size,
     });
     let measurement = Measurement::new(data, index);
-    let logs = logs.with_measurement(measurement.clone(), Metrics::M4);
+    logs.insert_measurement(measurement.clone(), Metrics::M4);
     Ok(Logging(measurement, logs))
 }
 
-async fn m5<D1>(nfd_status_f: D1, index: u64, logs: Logs<Metrics, Tasks, Data>) -> MeasurementResult
+async fn m5<D1>(
+    nfd_status_f: D1,
+    index: u64,
+    mut logs: Logs<Metrics, Tasks, Data>,
+) -> MeasurementResult
 where
     D1: Future<Output = Result<nfdc::NfdcStatus, Error>>,
 {
@@ -227,11 +247,15 @@ where
             .collect(),
     );
     let measurement = Measurement::new(data, index);
-    let logs = logs.with_measurement(measurement.clone(), Metrics::M5);
+    logs.insert_measurement(measurement.clone(), Metrics::M5);
     Ok(Logging(measurement, logs))
 }
 
-async fn m6<D1>(nfd_status_f: D1, index: u64, logs: Logs<Metrics, Tasks, Data>) -> MeasurementResult
+async fn m6<D1>(
+    nfd_status_f: D1,
+    index: u64,
+    mut logs: Logs<Metrics, Tasks, Data>,
+) -> MeasurementResult
 where
     D1: Future<Output = Result<nfdc::NfdcStatus, Error>>,
 {
@@ -251,11 +275,15 @@ where
             .collect(),
     );
     let measurement = Measurement::new(data, index);
-    let logs = logs.with_measurement(measurement.clone(), Metrics::M6);
+    logs.insert_measurement(measurement.clone(), Metrics::M6);
     Ok(Logging(measurement, logs))
 }
 
-async fn m7<D1>(nfd_status_f: D1, index: u64, logs: Logs<Metrics, Tasks, Data>) -> MeasurementResult
+async fn m7<D1>(
+    nfd_status_f: D1,
+    index: u64,
+    mut logs: Logs<Metrics, Tasks, Data>,
+) -> MeasurementResult
 where
     D1: Future<Output = Result<nfdc::NfdcStatus, Error>>,
 {
@@ -268,11 +296,15 @@ where
             .collect(),
     );
     let measurement = Measurement::new(data, index);
-    let logs = logs.with_measurement(measurement.clone(), Metrics::M7);
+    logs.insert_measurement(measurement.clone(), Metrics::M7);
     Ok(Logging(measurement, logs))
 }
 
-async fn m8<D1>(nfd_status_f: D1, index: u64, logs: Logs<Metrics, Tasks, Data>) -> MeasurementResult
+async fn m8<D1>(
+    nfd_status_f: D1,
+    index: u64,
+    mut logs: Logs<Metrics, Tasks, Data>,
+) -> MeasurementResult
 where
     D1: Future<Output = Result<nfdc::NfdcStatus, Error>>,
 {
@@ -285,11 +317,15 @@ where
             .collect(),
     );
     let measurement = Measurement::new(data, index);
-    let logs = logs.with_measurement(measurement.clone(), Metrics::M8);
+    logs.insert_measurement(measurement.clone(), Metrics::M8);
     Ok(Logging(measurement, logs))
 }
 
-async fn m9<D1>(nfd_status_f: D1, index: u64, logs: Logs<Metrics, Tasks, Data>) -> MeasurementResult
+async fn m9<D1>(
+    nfd_status_f: D1,
+    index: u64,
+    mut logs: Logs<Metrics, Tasks, Data>,
+) -> MeasurementResult
 where
     D1: Future<Output = Result<nfdc::NfdcStatus, Error>>,
 {
@@ -302,14 +338,14 @@ where
             .collect(),
     );
     let measurement = Measurement::new(data, index);
-    let logs = logs.with_measurement(measurement.clone(), Metrics::M9);
+    logs.insert_measurement(measurement.clone(), Metrics::M9);
     Ok(Logging(measurement, logs))
 }
 
 async fn m10<D1>(
     nfd_status_f: D1,
     index: u64,
-    logs: Logs<Metrics, Tasks, Data>,
+    mut logs: Logs<Metrics, Tasks, Data>,
 ) -> MeasurementResult
 where
     D1: Future<Output = Result<nfdc::NfdcStatus, Error>>,
@@ -323,14 +359,14 @@ where
             .collect(),
     );
     let measurement = Measurement::new(data, index);
-    let logs = logs.with_measurement(measurement.clone(), Metrics::M10);
+    logs.insert_measurement(measurement.clone(), Metrics::M10);
     Ok(Logging(measurement, logs))
 }
 
 async fn m11<D1>(
     certificate_list_f: D1,
     index: u64,
-    logs: Logs<Metrics, Tasks, Data>,
+    mut logs: Logs<Metrics, Tasks, Data>,
 ) -> MeasurementResult
 where
     D1: Future<Output = Result<ndnsec::list::CertificateList, Error>>,
@@ -358,14 +394,14 @@ where
             .collect(),
     );
     let measurement = Measurement::new(data, index);
-    let logs = logs.with_measurement(measurement.clone(), Metrics::M11);
+    logs.insert_measurement(measurement.clone(), Metrics::M11);
     Ok(Logging(measurement, logs))
 }
 
 async fn m12<D1>(
     certificate_list_f: D1,
     index: u64,
-    logs: Logs<Metrics, Tasks, Data>,
+    mut logs: Logs<Metrics, Tasks, Data>,
 ) -> MeasurementResult
 where
     D1: Future<Output = Result<ndnsec::list::CertificateList, Error>>,
@@ -379,14 +415,14 @@ where
             .next(),
     );
     let measurement = Measurement::new(data, index);
-    let logs = logs.with_measurement(measurement.clone(), Metrics::M12);
+    logs.insert_measurement(measurement.clone(), Metrics::M12);
     Ok(Logging(measurement, logs))
 }
 
 async fn m13<D1>(
     host_total_memory_f: D1,
     index: u64,
-    logs: Logs<Metrics, Tasks, Data>,
+    mut logs: Logs<Metrics, Tasks, Data>,
 ) -> MeasurementResult
 where
     D1: Future<Output = Result<u64, Error>>,
@@ -394,7 +430,7 @@ where
     let res = host_total_memory_f.timeout(TIMEOUT).await??;
     let data = Data::M13(res);
     let measurement = Measurement::new(data, index);
-    let logs = logs.with_measurement(measurement.clone(), Metrics::M13);
+    logs.insert_measurement(measurement.clone(), Metrics::M13);
     Ok(Logging(measurement, logs))
 }
 
@@ -402,8 +438,8 @@ async fn c1<M1>(m1: M1, index: u64) -> EvaluationResult
 where
     M1: Future<Output = MeasurementResult>,
 {
-    let Logging(measurement, m1_logs) = m1.await?;
-    let value = match measurement.data {
+    let Logging(meas_m1, mut logs_m1) = m1.await?;
+    let value = match meas_m1.data {
         Data::M1(cs_policy_name) if cs_policy_name == "lru" => Ok(true),
         Data::M1(_) => Ok(false),
         _ => Err(Error::EvaluationError(
@@ -412,8 +448,8 @@ where
     }?;
     println!("C1: {}", value);
     let evaluation = Evaluation::new(value, index);
-    let logs = m1_logs.with_evaluation(evaluation.clone(), Tasks::C1);
-    Ok(Logging(evaluation, logs))
+    logs_m1.insert_evaluation(evaluation.clone(), Tasks::C1);
+    Ok(Logging(evaluation, logs_m1))
 }
 
 async fn c2<M2, M13>(m2: M2, m13: M13, index: u64) -> EvaluationResult
@@ -421,9 +457,9 @@ where
     M2: Future<Output = MeasurementResult>,
     M13: Future<Output = MeasurementResult>,
 {
-    let (Logging(m2_measurement, m2_logs), Logging(m13_measurement, m13_logs)) =
+    let (Logging(meas_m2, mut logs_m2), Logging(m13_measurement, logs_m13)) =
         try_join(m2, m13).await?;
-    let value = match (m2_measurement.data, m13_measurement.data) {
+    let value = match (meas_m2.data, m13_measurement.data) {
         (Data::M2(cs_entries), Data::M13(total_memory))
             if total_memory * 80 / 100 >= cs_entries * CS_ENTRY_SIZE =>
         {
@@ -437,18 +473,18 @@ where
     }?;
     println!("C2: {}", value);
     let evaluation = Evaluation::new(value, index);
-    let logs = m2_logs
-        .merge(&m13_logs)
-        .with_evaluation(evaluation.clone(), Tasks::C2);
-    Ok(Logging(evaluation, logs))
+    logs_m2
+        .mut_merge(&logs_m13)
+        .insert_evaluation(evaluation.clone(), Tasks::C2);
+    Ok(Logging(evaluation, logs_m2))
 }
 
 async fn c3<M2>(m2: M2, index: u64) -> EvaluationResult
 where
     M2: Future<Output = MeasurementResult>,
 {
-    let Logging(measurement, m2_logs) = m2.await?;
-    let value = match measurement.data {
+    let Logging(meas_m2, mut logs_m2) = m2.await?;
+    let value = match meas_m2.data {
         Data::M2(cs_entries) => Ok(cs_entries <= 100000),
         _ => Err(Error::EvaluationError(
             "Wrong dependency task provided".to_string(),
@@ -456,8 +492,8 @@ where
     }?;
     println!("C3: {}", value);
     let evaluation = Evaluation::new(value, index);
-    let logs = m2_logs.with_evaluation(evaluation.clone(), Tasks::C3);
-    Ok(Logging(evaluation, logs))
+    logs_m2.insert_evaluation(evaluation.clone(), Tasks::C3);
+    Ok(Logging(evaluation, logs_m2))
 }
 
 async fn c4<M2, M3>(m2: M2, m3: M3, index: u64) -> EvaluationResult
@@ -465,9 +501,8 @@ where
     M2: Future<Output = MeasurementResult>,
     M3: Future<Output = MeasurementResult>,
 {
-    let (Logging(m2_measurement, m2_logs), Logging(m3_measurement, m3_logs)) =
-        try_join(m2, m3).await?;
-    let value = match (m2_measurement.data, m3_measurement.data) {
+    let (Logging(meas_m2, mut logs_m2), Logging(meas_m3, logs_m3)) = try_join(m2, m3).await?;
+    let value = match (meas_m2.data, meas_m3.data) {
         (Data::M2(cs_entries), Data::M3(cs_usage)) if cs_usage >= cs_entries * 80 / 100 => Ok(true),
         (Data::M2(_), Data::M3(_)) => Ok(false),
         _ => Err(Error::EvaluationError(
@@ -476,23 +511,23 @@ where
     }?;
     println!("C4: {}", value);
     let evaluation = Evaluation::new(value, index);
-    let logs = m2_logs
-        .merge(&m3_logs)
-        .with_evaluation(evaluation.clone(), Tasks::C4);
-    Ok(Logging(evaluation, logs))
+    logs_m2
+        .mut_merge(&logs_m3)
+        .insert_evaluation(evaluation.clone(), Tasks::C4);
+    Ok(Logging(evaluation, logs_m2))
 }
 
 async fn c5<M3>(m3: M3, index: u64) -> EvaluationResult
 where
     M3: Future<Output = MeasurementResult>,
 {
-    let Logging(measurement, m3_logs) = m3.await?;
+    let Logging(meas_m3, mut logs_m3) = m3.await?;
 
-    let value = match (index, measurement.data) {
+    let value = match (index, meas_m3.data) {
         (i, _) if i < 4 => Ok(false),
         (_, Data::M3(_)) => {
             let cs_usages = (index - 4..=index)
-                .filter_map(|i| m3_logs.measurements_index.get(&(Metrics::M3, i)))
+                .filter_map(|i| logs_m3.measurements_index.get(&(Metrics::M3, i)))
                 .filter_map(|d| if let Data::M3(v) = d { Some(v) } else { None })
                 .collect::<Vec<_>>();
             if cs_usages.len() < 5 {
@@ -515,15 +550,15 @@ where
     }?;
     println!("C5: {}", value);
     let evaluation = Evaluation::new(value, index);
-    let logs = m3_logs.with_evaluation(evaluation.clone(), Tasks::C5);
-    Ok(Logging(evaluation, logs))
+    logs_m3.insert_evaluation(evaluation.clone(), Tasks::C5);
+    Ok(Logging(evaluation, logs_m3))
 }
 
 async fn c6<M4>(m4: M4, index: u64) -> EvaluationResult
 where
     M4: Future<Output = MeasurementResult>,
 {
-    let Logging(meas_m4, logs_m4) = m4.await?;
+    let Logging(meas_m4, mut logs_m4) = m4.await?;
     let value = match meas_m4.data {
         Data::M4(v) => Ok(v.std_dev <= 5.0_f64),
         _ => Err(Error::EvaluationError(
@@ -532,15 +567,15 @@ where
     }?;
     println!("C6: {}", value);
     let evaluation = Evaluation::new(value, index);
-    let logs = logs_m4.with_evaluation(evaluation.clone(), Tasks::C6);
-    Ok(Logging(evaluation, logs))
+    logs_m4.insert_evaluation(evaluation.clone(), Tasks::C6);
+    Ok(Logging(evaluation, logs_m4))
 }
 
 async fn c7<M4>(m4: M4, index: u64) -> EvaluationResult
 where
     M4: Future<Output = MeasurementResult>,
 {
-    let Logging(meas_m4, logs_m4) = m4.await?;
+    let Logging(meas_m4, mut logs_m4) = m4.await?;
     let value = match meas_m4.data {
         Data::M4(v) => Ok(v.avg >= 20_f64),
         _ => Err(Error::EvaluationError(
@@ -549,15 +584,15 @@ where
     }?;
     println!("C7: {}", value);
     let evaluation = Evaluation::new(value, index);
-    let logs = logs_m4.with_evaluation(evaluation.clone(), Tasks::C7);
-    Ok(Logging(evaluation, logs))
+    logs_m4.insert_evaluation(evaluation.clone(), Tasks::C7);
+    Ok(Logging(evaluation, logs_m4))
 }
 
 async fn c8<M6>(m6: M6, index: u64) -> EvaluationResult
 where
     M6: Future<Output = MeasurementResult>,
 {
-    let Logging(meas_m6, logs_m6) = m6.await?;
+    let Logging(meas_m6, mut logs_m6) = m6.await?;
     let value = match meas_m6.data {
         Data::M6(v) => Ok(v.values().all(|v| *v < 100)),
         _ => Err(Error::EvaluationError(
@@ -566,15 +601,15 @@ where
     }?;
     println!("C8: {}", value);
     let evaluation = Evaluation::new(value, index);
-    let logs = logs_m6.with_evaluation(evaluation.clone(), Tasks::C8);
-    Ok(Logging(evaluation, logs))
+    logs_m6.insert_evaluation(evaluation.clone(), Tasks::C8);
+    Ok(Logging(evaluation, logs_m6))
 }
 
 async fn c9<M7>(m7: M7, index: u64) -> EvaluationResult
 where
     M7: Future<Output = MeasurementResult>,
 {
-    let Logging(meas_m7, logs_m7) = m7.await?;
+    let Logging(meas_m7, mut logs_m7) = m7.await?;
     let value = match meas_m7.data {
         Data::M7(v) => Ok(v.values().all(|s| s.min >= 10)),
         _ => Err(Error::EvaluationError(
@@ -583,15 +618,15 @@ where
     }?;
     println!("C9: {}", value);
     let evaluation = Evaluation::new(value, index);
-    let logs = logs_m7.with_evaluation(evaluation.clone(), Tasks::C9);
-    Ok(Logging(evaluation, logs))
+    logs_m7.insert_evaluation(evaluation.clone(), Tasks::C9);
+    Ok(Logging(evaluation, logs_m7))
 }
 
 async fn c10<M9>(m9: M9, index: u64) -> EvaluationResult
 where
     M9: Future<Output = MeasurementResult>,
 {
-    let Logging(meas_m9, logs_m9) = m9.await?;
+    let Logging(meas_m9, mut logs_m9) = m9.await?;
     let value = match meas_m9.data {
         Data::M9(v) => Ok(v
             .values()
@@ -603,15 +638,15 @@ where
     }?;
     println!("C10: {}", value);
     let evaluation = Evaluation::new(value, index);
-    let logs = logs_m9.with_evaluation(evaluation.clone(), Tasks::C10);
-    Ok(Logging(evaluation, logs))
+    logs_m9.insert_evaluation(evaluation.clone(), Tasks::C10);
+    Ok(Logging(evaluation, logs_m9))
 }
 
 async fn c11<M8>(m8: M8, index: u64) -> EvaluationResult
 where
     M8: Future<Output = MeasurementResult>,
 {
-    let Logging(meas_m8, logs_m8) = m8.await?;
+    let Logging(meas_m8, mut logs_m8) = m8.await?;
     let value = match meas_m8.data {
         Data::M8(v) => Ok(v.values().all(|s| s.min >= 10)),
         _ => Err(Error::EvaluationError(
@@ -620,15 +655,15 @@ where
     }?;
     println!("C11: {}", value);
     let evaluation = Evaluation::new(value, index);
-    let logs = logs_m8.with_evaluation(evaluation.clone(), Tasks::C11);
-    Ok(Logging(evaluation, logs))
+    logs_m8.insert_evaluation(evaluation.clone(), Tasks::C11);
+    Ok(Logging(evaluation, logs_m8))
 }
 
 async fn c12<M10>(m10: M10, index: u64) -> EvaluationResult
 where
     M10: Future<Output = MeasurementResult>,
 {
-    let Logging(meas_m10, logs_m10) = m10.await?;
+    let Logging(meas_m10, mut logs_m10) = m10.await?;
     let value = match meas_m10.data {
         Data::M10(v) => Ok(v
             .values()
@@ -640,15 +675,15 @@ where
     }?;
     println!("C12: {}", value);
     let evaluation = Evaluation::new(value, index);
-    let logs = logs_m10.with_evaluation(evaluation.clone(), Tasks::C12);
-    Ok(Logging(evaluation, logs))
+    logs_m10.insert_evaluation(evaluation.clone(), Tasks::C12);
+    Ok(Logging(evaluation, logs_m10))
 }
 
 async fn c13<M11>(m11: M11, index: u64) -> EvaluationResult
 where
     M11: Future<Output = MeasurementResult>,
 {
-    let Logging(meas_m11, logs_m11) = m11.await?;
+    let Logging(meas_m11, mut logs_m11) = m11.await?;
     let now = Utc::now();
     let value = match meas_m11.data {
         Data::M11(v) => Ok(v.values().all(|s| s.0 < now && now < s.1)),
@@ -658,15 +693,15 @@ where
     }?;
     println!("C13: {}", value);
     let evaluation = Evaluation::new(value, index);
-    let logs = logs_m11.with_evaluation(evaluation.clone(), Tasks::C13);
-    Ok(Logging(evaluation, logs))
+    logs_m11.insert_evaluation(evaluation.clone(), Tasks::C13);
+    Ok(Logging(evaluation, logs_m11))
 }
 
 async fn c14<M12>(m12: M12, index: u64) -> EvaluationResult
 where
     M12: Future<Output = MeasurementResult>,
 {
-    let Logging(meas_m12, logs_m12) = m12.await?;
+    let Logging(meas_m12, mut logs_m12) = m12.await?;
     let value = match meas_m12.data {
         Data::M12(v) => Ok(v.is_some()),
         _ => Err(Error::EvaluationError(
@@ -675,8 +710,8 @@ where
     }?;
     println!("C14: {}", value);
     let evaluation = Evaluation::new(value, index);
-    let logs = logs_m12.with_evaluation(evaluation.clone(), Tasks::C14);
-    Ok(Logging(evaluation, logs))
+    logs_m12.insert_evaluation(evaluation.clone(), Tasks::C14);
+    Ok(Logging(evaluation, logs_m12))
 }
 
 async fn r1<C1, C2, C3>(c1: C1, c2: C2, c3: C3, index: u64) -> EvaluationResult
@@ -685,17 +720,17 @@ where
     C2: Future<Output = EvaluationResult>,
     C3: Future<Output = EvaluationResult>,
 {
-    let (Logging(eval_c1, logs_c1), Logging(eval_c2, logs_c2), Logging(eval_c3, logs_c3)) =
+    let (Logging(eval_c1, mut logs_c1), Logging(eval_c2, logs_c2), Logging(eval_c3, logs_c3)) =
         try_join3(c1, c2, c3).await?;
     // println!("DEPS R1: {:#?} {:#?} {:#?} ", eval_c1, eval_c2, eval_c3);
     let value = eval_c1.value && eval_c2.value && eval_c3.value;
     println!("R1: {}", value);
     let evaluation = Evaluation::new(value, index);
-    let logs = logs_c1
-        .merge(&logs_c2)
-        .merge(&logs_c3)
-        .with_evaluation(evaluation.clone(), Tasks::R1);
-    Ok(Logging(evaluation, logs))
+    logs_c1
+        .mut_merge(&logs_c2)
+        .mut_merge(&logs_c3)
+        .insert_evaluation(evaluation.clone(), Tasks::R1);
+    Ok(Logging(evaluation, logs_c1))
 }
 
 async fn r2<C4, C5, C6, C7>(c4: C4, c5: C5, c6: C6, c7: C7, index: u64) -> EvaluationResult
@@ -706,21 +741,25 @@ where
     C7: Future<Output = EvaluationResult>,
 {
     let (
-        Logging(_eval_c4, logs_4),
-        Logging(_eval_c5, logs_5),
-        Logging(_eval_c6, logs_6),
-        Logging(_eval_c7, logs_7),
+        Logging(_eval_c4, mut logs_c4),
+        Logging(_eval_c5, logs_c5),
+        Logging(_eval_c6, logs_c6),
+        Logging(_eval_c7, logs_c7),
     ) = try_join4(c4, c5, c6, c7).await?;
     // println!(
     //     "DEPS R2: {:#?} {:#?} {:#?} {:#?}",
     //     _eval_c4, _eval_c5, _eval_c6, _eval_c7
     // );
-    let logs = logs_4.merge(&logs_5).merge(&logs_6).merge(&logs_7);
+    logs_c4
+        .mut_merge(&logs_c5)
+        .mut_merge(&logs_c6)
+        .mut_merge(&logs_c7);
     let now = Utc::now();
     let value = [Tasks::C4, Tasks::C5, Tasks::C6, Tasks::C7]
         .iter()
         .all(|t| {
-            logs.evaluations_timestamp
+            logs_c4
+                .evaluations_timestamp
                 .iter()
                 .filter_map(|m| match m {
                     ((task, timestamp), value)
@@ -734,15 +773,15 @@ where
         });
     println!("R2: {}", value);
     let evaluation = Evaluation::new(value, index);
-    let logs = logs.with_evaluation(evaluation.clone(), Tasks::R2);
-    Ok(Logging(evaluation, logs))
+    logs_c4.insert_evaluation(evaluation.clone(), Tasks::R2);
+    Ok(Logging(evaluation, logs_c4))
 }
 
 async fn r3<C8>(c8: C8, index: u64) -> EvaluationResult
 where
     C8: Future<Output = EvaluationResult>,
 {
-    let Logging(_eval_c8, logs_c8) = c8.await?;
+    let Logging(_eval_c8, mut logs_c8) = c8.await?;
     // println!("DEPS R3: {:#?}", _eval_c8);
     let now = Utc::now();
     let value = logs_c8
@@ -759,8 +798,8 @@ where
         .all(|v| *v);
     println!("R3: {}", value);
     let evaluation = Evaluation::new(value, index);
-    let logs = logs_c8.with_evaluation(evaluation.clone(), Tasks::R3);
-    Ok(Logging(evaluation, logs))
+    logs_c8.insert_evaluation(evaluation.clone(), Tasks::R3);
+    Ok(Logging(evaluation, logs_c8))
 }
 
 async fn r4<C9, C10>(c9: C9, c10: C10, index: u64) -> EvaluationResult
@@ -768,12 +807,13 @@ where
     C9: Future<Output = EvaluationResult>,
     C10: Future<Output = EvaluationResult>,
 {
-    let (Logging(_eval_c9, logs_c9), Logging(_eval_c10, logs_c10)) = try_join(c9, c10).await?;
+    let (Logging(_eval_c9, mut logs_c9), Logging(_eval_c10, logs_c10)) = try_join(c9, c10).await?;
     // println!("DEPS R4: {:#?} {:#?}", _eval_c9, _eval_c10);
-    let logs = logs_c9.merge(&logs_c10);
+    logs_c9.mut_merge(&logs_c10);
     let now = Utc::now();
     let value = [Tasks::C9, Tasks::C10].iter().all(|t| {
-        logs.evaluations_timestamp
+        logs_c9
+            .evaluations_timestamp
             .iter()
             .filter_map(|m| match m {
                 ((task, timestamp), value)
@@ -787,8 +827,8 @@ where
     });
     println!("R4: {}", value);
     let evaluation = Evaluation::new(value, index);
-    let logs = logs.with_evaluation(evaluation.clone(), Tasks::R4);
-    Ok(Logging(evaluation, logs))
+    logs_c9.insert_evaluation(evaluation.clone(), Tasks::R4);
+    Ok(Logging(evaluation, logs_c9))
 }
 
 async fn r5<C11, C12>(c11: C11, c12: C12, index: u64) -> EvaluationResult
@@ -796,12 +836,14 @@ where
     C11: Future<Output = EvaluationResult>,
     C12: Future<Output = EvaluationResult>,
 {
-    let (Logging(_eval_c11, logs_c11), Logging(_eval_c12, logs_c12)) = try_join(c11, c12).await?;
+    let (Logging(_eval_c11, mut logs_c11), Logging(_eval_c12, logs_c12)) =
+        try_join(c11, c12).await?;
     // println!("DEPS R5: {:#?} {:#?}", _eval_c11, _eval_c12);
-    let logs = logs_c11.merge(&logs_c12);
+    logs_c11.mut_merge(&logs_c12);
     let now = Utc::now();
     let value = [Tasks::C11, Tasks::C12].iter().all(|t| {
-        logs.evaluations_timestamp
+        logs_c11
+            .evaluations_timestamp
             .iter()
             .filter_map(|m| match m {
                 ((task, timestamp), value)
@@ -815,15 +857,15 @@ where
     });
     println!("R5: {}", value);
     let evaluation = Evaluation::new(value, index);
-    let logs = logs.with_evaluation(evaluation.clone(), Tasks::R5);
-    Ok(Logging(evaluation, logs))
+    logs_c11.insert_evaluation(evaluation.clone(), Tasks::R5);
+    Ok(Logging(evaluation, logs_c11))
 }
 
 async fn r6<C13>(c13: C13, index: u64) -> EvaluationResult
 where
     C13: Future<Output = EvaluationResult>,
 {
-    let Logging(_eval_c13, logs_c13) = c13.await?;
+    let Logging(_eval_c13, mut logs_c13) = c13.await?;
     // println!("DEPS R6: {:#?}", _eval_c13);
     let now = Utc::now();
     let value = logs_c13
@@ -840,15 +882,15 @@ where
         .all(|v| *v);
     println!("R6: {}", value);
     let evaluation = Evaluation::new(value, index);
-    let logs = logs_c13.with_evaluation(evaluation.clone(), Tasks::R6);
-    Ok(Logging(evaluation, logs))
+    logs_c13.insert_evaluation(evaluation.clone(), Tasks::R6);
+    Ok(Logging(evaluation, logs_c13))
 }
 
 async fn r7<C14>(c14: C14, index: u64) -> EvaluationResult
 where
     C14: Future<Output = EvaluationResult>,
 {
-    let Logging(_eval_c14, logs_c14) = c14.await?;
+    let Logging(_eval_c14, mut logs_c14) = c14.await?;
     // println!("DEPS R7: {:#?}", _eval_c14);
     let now = Utc::now();
     let value = logs_c14
@@ -865,8 +907,8 @@ where
         .all(|v| *v);
     println!("R7: {}", value);
     let evaluation = Evaluation::new(value, index);
-    let logs = logs_c14.with_evaluation(evaluation.clone(), Tasks::R7);
-    Ok(Logging(evaluation, logs))
+    logs_c14.insert_evaluation(evaluation.clone(), Tasks::R7);
+    Ok(Logging(evaluation, logs_c14))
 }
 
 async fn p1<R1, R2, R3, R4, R5>(
@@ -885,22 +927,23 @@ where
     R5: Future<Output = EvaluationResult>,
 {
     let (
-        Logging(_, logs_r1),
+        Logging(_, mut logs_r1),
         Logging(_, logs_r2),
         Logging(_, logs_r3),
         Logging(_, logs_r4),
         Logging(_, logs_r5),
     ) = try_join5(r1, r2, r3, r4, r5).await?;
-    let logs = logs_r1
-        .merge(&logs_r2)
-        .merge(&logs_r3)
-        .merge(&logs_r4)
-        .merge(&logs_r5);
+    logs_r1
+        .mut_merge(&logs_r2)
+        .mut_merge(&logs_r3)
+        .mut_merge(&logs_r4)
+        .mut_merge(&logs_r5);
     let now = Utc::now();
     let value = [Tasks::R1, Tasks::R2, Tasks::R3, Tasks::R4, Tasks::R5]
         .iter()
         .all(|t| {
-            logs.evaluations_timestamp
+            logs_r1
+                .evaluations_timestamp
                 .iter()
                 .filter_map(|m| match m {
                     ((task, timestamp), value)
@@ -913,8 +956,8 @@ where
                 .all(|v| *v)
         });
     let evaluation = Evaluation::new(value, index);
-    let logs = logs.with_evaluation(evaluation.clone(), Tasks::P1);
-    Ok(Logging(evaluation, logs))
+    logs_r1.insert_evaluation(evaluation.clone(), Tasks::P1);
+    Ok(Logging(evaluation, logs_r1))
 }
 
 async fn p2<R6, R7>(r6: R6, r7: R7, index: u64) -> EvaluationResult
@@ -922,11 +965,12 @@ where
     R6: Future<Output = EvaluationResult>,
     R7: Future<Output = EvaluationResult>,
 {
-    let (Logging(_, logs_r6), Logging(_, logs_r7)) = try_join(r6, r7).await?;
-    let logs = logs_r6.merge(&logs_r7);
+    let (Logging(_, mut logs_r6), Logging(_, logs_r7)) = try_join(r6, r7).await?;
+    logs_r6.mut_merge(&logs_r7);
     let now = Utc::now();
     let value = [Tasks::R6, Tasks::R7].iter().all(|t| {
-        logs.evaluations_timestamp
+        logs_r6
+            .evaluations_timestamp
             .iter()
             .filter_map(|m| match m {
                 ((task, timestamp), value)
@@ -939,8 +983,8 @@ where
             .all(|v| *v)
     });
     let evaluation = Evaluation::new(value, index);
-    let logs = logs.with_evaluation(evaluation.clone(), Tasks::P2);
-    Ok(Logging(evaluation, logs))
+    logs_r6.insert_evaluation(evaluation.clone(), Tasks::P2);
+    Ok(Logging(evaluation, logs_r6))
 }
 
 async fn p3<R6, R7>(r6: R6, r7: R7, index: u64) -> EvaluationResult
@@ -948,11 +992,12 @@ where
     R6: Future<Output = EvaluationResult>,
     R7: Future<Output = EvaluationResult>,
 {
-    let (Logging(_, logs_r6), Logging(_, logs_r7)) = try_join(r6, r7).await?;
-    let logs = logs_r6.merge(&logs_r7);
+    let (Logging(_, mut logs_r6), Logging(_, logs_r7)) = try_join(r6, r7).await?;
+    logs_r6.mut_merge(&logs_r7);
     let now = Utc::now();
     let value = [Tasks::R6, Tasks::R7].iter().all(|t| {
-        logs.evaluations_timestamp
+        logs_r6
+            .evaluations_timestamp
             .iter()
             .filter_map(|m| match m {
                 ((task, timestamp), value)
@@ -965,8 +1010,8 @@ where
             .all(|v| *v)
     });
     let evaluation = Evaluation::new(value, index);
-    let logs = logs.with_evaluation(evaluation.clone(), Tasks::P3);
-    Ok(Logging(evaluation, logs))
+    logs_r6.insert_evaluation(evaluation.clone(), Tasks::P3);
+    Ok(Logging(evaluation, logs_r6))
 }
 
 #[async_std::main]
@@ -1049,20 +1094,15 @@ async fn main() {
                     Logging(evaluation_3, logs_3),
                 ) = v;
                 let _evaluation = evaluation_1.value && evaluation_2.value && evaluation_3.value;
-                let new_logs = logs
-                    .read()
+                logs.write()
                     .unwrap()
-                    .merge(&logs_1)
-                    .merge(&logs_2)
-                    .merge(&logs_3);
-                let timestamp = Utc::now();
-                let execution_nano =
-                    timestamp.timestamp_nanos() - execution_start.timestamp_nanos();
-                // let system = sysinfo::System::default();
-                // let process = system.get_process(pid).unwrap();
-                // let memory = process.memory();
-                let new_logs = new_logs.with_duration(execution_nano, index);
-                *(logs.write().unwrap()) = new_logs;
+                    .mut_merge(&logs_1)
+                    .mut_merge(&logs_2)
+                    .mut_merge(&logs_3)
+                    .insert_duration(
+                        Utc::now().timestamp_nanos() - execution_start.timestamp_nanos(),
+                        index,
+                    );
                 println!("{:4} => {:#?}", index, _evaluation);
                 // println!("{:#?}", _logs);
             }
