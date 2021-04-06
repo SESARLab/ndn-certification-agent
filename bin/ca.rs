@@ -14,6 +14,7 @@ use std::process::exit;
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
+// use sysinfo::{self, ProcessExt, SystemExt};
 use systemstat::{Platform, System};
 
 use ndn_certification_agent::{
@@ -985,8 +986,11 @@ async fn main() {
         exit(0)
     })
     .unwrap();
+    // let pid = sysinfo::get_current_pid().unwrap();
 
     for index in 0u64.. {
+        let execution_start = Utc::now();
+
         let host_total_memory_f = host_total_memory().shared();
         let nfd_status_f = nfdc_status().shared();
         let certificate_list_f = ndnsec_list().shared();
@@ -1051,6 +1055,13 @@ async fn main() {
                     .merge(&logs_1)
                     .merge(&logs_2)
                     .merge(&logs_3);
+                let timestamp = Utc::now();
+                let execution_nano =
+                    timestamp.timestamp_nanos() - execution_start.timestamp_nanos();
+                // let system = sysinfo::System::default();
+                // let process = system.get_process(pid).unwrap();
+                // let memory = process.memory();
+                let new_logs = new_logs.with_duration(execution_nano, index, timestamp);
                 *(logs.write().unwrap()) = new_logs;
                 println!("{:4} => {:#?}", index, _evaluation);
                 // println!("{:#?}", _logs);
