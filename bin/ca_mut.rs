@@ -755,6 +755,7 @@ where
         .mut_merge(&logs_c6)
         .mut_merge(&logs_c7);
     let now = Utc::now();
+    let duration = chrono::Duration::minutes(-2);
     let value = [Tasks::C4, Tasks::C5, Tasks::C6, Tasks::C7]
         .iter()
         .all(|t| {
@@ -762,9 +763,7 @@ where
                 .evaluations_timestamp
                 .iter()
                 .filter_map(|m| match m {
-                    ((task, timestamp), value)
-                        if *task == *t && *timestamp >= now + chrono::Duration::minutes(-2) =>
-                    {
+                    ((task, timestamp), value) if *task == *t && *timestamp >= now + duration => {
                         Some(value)
                     }
                     _ => None,
@@ -784,13 +783,12 @@ where
     let Logging(_eval_c8, mut logs_c8) = c8.await?;
     // println!("DEPS R3: {:#?}", _eval_c8);
     let now = Utc::now();
+    let duration = chrono::Duration::minutes(-2);
     let value = logs_c8
         .evaluations_timestamp
         .iter()
         .filter_map(|m| match m {
-            ((task, timestamp), value)
-                if *task == Tasks::C8 && *timestamp >= now + chrono::Duration::minutes(-2) =>
-            {
+            ((task, timestamp), value) if *task == Tasks::C8 && *timestamp >= now + duration => {
                 Some(value)
             }
             _ => None,
@@ -811,14 +809,13 @@ where
     // println!("DEPS R4: {:#?} {:#?}", _eval_c9, _eval_c10);
     logs_c9.mut_merge(&logs_c10);
     let now = Utc::now();
+    let duration = chrono::Duration::minutes(-2);
     let value = [Tasks::C9, Tasks::C10].iter().all(|t| {
         logs_c9
             .evaluations_timestamp
             .iter()
             .filter_map(|m| match m {
-                ((task, timestamp), value)
-                    if *task == *t && *timestamp >= now + chrono::Duration::minutes(-2) =>
-                {
+                ((task, timestamp), value) if *task == *t && *timestamp >= now + duration => {
                     Some(value)
                 }
                 _ => None,
@@ -841,14 +838,13 @@ where
     // println!("DEPS R5: {:#?} {:#?}", _eval_c11, _eval_c12);
     logs_c11.mut_merge(&logs_c12);
     let now = Utc::now();
+    let duration = chrono::Duration::minutes(-2);
     let value = [Tasks::C11, Tasks::C12].iter().all(|t| {
         logs_c11
             .evaluations_timestamp
             .iter()
             .filter_map(|m| match m {
-                ((task, timestamp), value)
-                    if *task == *t && *timestamp >= now + chrono::Duration::minutes(-2) =>
-                {
+                ((task, timestamp), value) if *task == *t && *timestamp >= now + duration => {
                     Some(value)
                 }
                 _ => None,
@@ -868,13 +864,12 @@ where
     let Logging(_eval_c13, mut logs_c13) = c13.await?;
     // println!("DEPS R6: {:#?}", _eval_c13);
     let now = Utc::now();
+    let duration = chrono::Duration::minutes(-2);
     let value = logs_c13
         .evaluations_timestamp
         .iter()
         .filter_map(|m| match m {
-            ((task, timestamp), value)
-                if *task == Tasks::C13 && *timestamp >= now + chrono::Duration::minutes(-2) =>
-            {
+            ((task, timestamp), value) if *task == Tasks::C13 && *timestamp >= now + duration => {
                 Some(value)
             }
             _ => None,
@@ -893,13 +888,12 @@ where
     let Logging(_eval_c14, mut logs_c14) = c14.await?;
     // println!("DEPS R7: {:#?}", _eval_c14);
     let now = Utc::now();
+    let duration = chrono::Duration::minutes(-2);
     let value = logs_c14
         .evaluations_timestamp
         .iter()
         .filter_map(|m| match m {
-            ((task, timestamp), value)
-                if *task == Tasks::C14 && *timestamp >= now + chrono::Duration::minutes(-2) =>
-            {
+            ((task, timestamp), value) if *task == Tasks::C14 && *timestamp >= now + duration => {
                 Some(value)
             }
             _ => None,
@@ -939,6 +933,7 @@ where
         .mut_merge(&logs_r4)
         .mut_merge(&logs_r5);
     let now = Utc::now();
+    let duration = chrono::Duration::minutes(-2);
     let value = [Tasks::R1, Tasks::R2, Tasks::R3, Tasks::R4, Tasks::R5]
         .iter()
         .all(|t| {
@@ -946,9 +941,7 @@ where
                 .evaluations_timestamp
                 .iter()
                 .filter_map(|m| match m {
-                    ((task, timestamp), value)
-                        if *task == *t && *timestamp >= now + chrono::Duration::minutes(-2) =>
-                    {
+                    ((task, timestamp), value) if *task == *t && *timestamp >= now + duration => {
                         Some(value)
                     }
                     _ => None,
@@ -968,14 +961,13 @@ where
     let (Logging(_, mut logs_r6), Logging(_, logs_r7)) = try_join(r6, r7).await?;
     logs_r6.mut_merge(&logs_r7);
     let now = Utc::now();
+    let duration = chrono::Duration::minutes(-2);
     let value = [Tasks::R6, Tasks::R7].iter().all(|t| {
         logs_r6
             .evaluations_timestamp
             .iter()
             .filter_map(|m| match m {
-                ((task, timestamp), value)
-                    if *task == *t && *timestamp >= now + chrono::Duration::minutes(-2) =>
-                {
+                ((task, timestamp), value) if *task == *t && *timestamp >= now + duration => {
                     Some(value)
                 }
                 _ => None,
@@ -995,14 +987,13 @@ where
     let (Logging(_, mut logs_r6), Logging(_, logs_r7)) = try_join(r6, r7).await?;
     logs_r6.mut_merge(&logs_r7);
     let now = Utc::now();
+    let duration = chrono::Duration::minutes(-2);
     let value = [Tasks::R6, Tasks::R7].iter().all(|t| {
         logs_r6
             .evaluations_timestamp
             .iter()
             .filter_map(|m| match m {
-                ((task, timestamp), value)
-                    if *task == *t && *timestamp >= now + chrono::Duration::minutes(-2) =>
-                {
+                ((task, timestamp), value) if *task == *t && *timestamp >= now + duration => {
                     Some(value)
                 }
                 _ => None,
