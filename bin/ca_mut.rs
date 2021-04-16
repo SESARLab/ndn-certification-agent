@@ -410,8 +410,13 @@ where
     let data = Data::M12(
         res.certificates
             .iter()
-            .filter(|c| c.is_default)
-            .map(|c| c.certificate.clone())
+            .filter_map(|c| {
+                if c.is_default {
+                    Some(c.certificate.clone())
+                } else {
+                    None
+                }
+            })
             .next(),
     );
     let measurement = Measurement::new(data, index);
@@ -526,23 +531,24 @@ where
     let value = match (index, meas_m3.data) {
         (i, _) if i < 4 => Ok(false),
         (_, Data::M3(_)) => {
-            let cs_usages = (index - 4..=index)
-                .filter_map(|i| logs_m3.measurements_index.get(&(Metrics::M3, i)))
-                .filter_map(|d| if let Data::M3(v) = d { Some(v) } else { None })
+            let cs_usages = logs_m3
+                .measurements_index
+                .entry(Metrics::M3)
+                .or_insert_with(Default::default)
+                .iter()
+                .rev()
+                .take(5)
+                .filter_map(|e| if let Data::M3(v) = e.1 { Some(v) } else { None })
                 .collect::<Vec<_>>();
-            if cs_usages.len() < 5 {
-                Ok(false)
-            } else {
-                let mean = cs_usages.iter().cloned().sum::<u64>() as f64 / cs_usages.len() as f64;
-                let std_dev = (cs_usages
-                    .iter()
-                    .fold(0_f64, |acc, new| acc + (**new as f64 - mean).powi(2))
-                    / (cs_usages.len() as u64 - 1) as f64)
-                    .sqrt();
-                // println!("C5 std: {}", std_dev);
-                // Finally check if std_dev across measurements is less than 5.0
-                Ok(std_dev < 5.0f64)
-            }
+            let mean = cs_usages.iter().sum::<u64>() as f64 / cs_usages.len() as f64;
+            let std_dev = (cs_usages
+                .iter()
+                .fold(0_f64, |acc, new| acc + (*new as f64 - mean).powi(2))
+                / (cs_usages.len() as u64 - 1) as f64)
+                .sqrt();
+            // println!("C5 std: {}", std_dev);
+            // Finally check if std_dev across measurements is less than 5.0
+            Ok(std_dev < 5.0f64)
         }
         _ => Err(Error::EvaluationError(
             "Wrong dependency tasks provided".to_string(),
@@ -761,14 +767,12 @@ where
         .all(|t| {
             logs_c4
                 .evaluations_timestamp
+                .entry(t.clone())
+                .or_insert_with(Default::default)
                 .iter()
-                .filter_map(|m| match m {
-                    ((task, timestamp), value) if *task == *t && *timestamp >= now + duration => {
-                        Some(value)
-                    }
-                    _ => None,
-                })
-                .all(|v| *v)
+                .rev()
+                .take_while(|(timestamp, _)| *timestamp >= now + duration)
+                .all(|(_, value)| *value)
         });
     println!("R2: {}", value);
     let evaluation = Evaluation::new(value, index);
@@ -786,14 +790,12 @@ where
     let duration = chrono::Duration::minutes(-2);
     let value = logs_c8
         .evaluations_timestamp
+        .entry(Tasks::C8)
+        .or_insert_with(Default::default)
         .iter()
-        .filter_map(|m| match m {
-            ((task, timestamp), value) if *task == Tasks::C8 && *timestamp >= now + duration => {
-                Some(value)
-            }
-            _ => None,
-        })
-        .all(|v| *v);
+        .rev()
+        .take_while(|(timestamp, _)| *timestamp >= now + duration)
+        .all(|(_, value)| *value);
     println!("R3: {}", value);
     let evaluation = Evaluation::new(value, index);
     logs_c8.insert_evaluation(evaluation.clone(), Tasks::R3);
@@ -813,14 +815,12 @@ where
     let value = [Tasks::C9, Tasks::C10].iter().all(|t| {
         logs_c9
             .evaluations_timestamp
+            .entry(t.clone())
+            .or_insert_with(Default::default)
             .iter()
-            .filter_map(|m| match m {
-                ((task, timestamp), value) if *task == *t && *timestamp >= now + duration => {
-                    Some(value)
-                }
-                _ => None,
-            })
-            .all(|v| *v)
+            .rev()
+            .take_while(|(timestamp, _)| *timestamp >= now + duration)
+            .all(|(_, value)| *value)
     });
     println!("R4: {}", value);
     let evaluation = Evaluation::new(value, index);
@@ -842,14 +842,12 @@ where
     let value = [Tasks::C11, Tasks::C12].iter().all(|t| {
         logs_c11
             .evaluations_timestamp
+            .entry(t.clone())
+            .or_insert_with(Default::default)
             .iter()
-            .filter_map(|m| match m {
-                ((task, timestamp), value) if *task == *t && *timestamp >= now + duration => {
-                    Some(value)
-                }
-                _ => None,
-            })
-            .all(|v| *v)
+            .rev()
+            .take_while(|(timestamp, _)| *timestamp >= now + duration)
+            .all(|(_, value)| *value)
     });
     println!("R5: {}", value);
     let evaluation = Evaluation::new(value, index);
@@ -867,14 +865,12 @@ where
     let duration = chrono::Duration::minutes(-2);
     let value = logs_c13
         .evaluations_timestamp
+        .entry(Tasks::C13)
+        .or_insert_with(Default::default)
         .iter()
-        .filter_map(|m| match m {
-            ((task, timestamp), value) if *task == Tasks::C13 && *timestamp >= now + duration => {
-                Some(value)
-            }
-            _ => None,
-        })
-        .all(|v| *v);
+        .rev()
+        .take_while(|(timestamp, _)| *timestamp >= now + duration)
+        .all(|(_, value)| *value);
     println!("R6: {}", value);
     let evaluation = Evaluation::new(value, index);
     logs_c13.insert_evaluation(evaluation.clone(), Tasks::R6);
@@ -891,14 +887,13 @@ where
     let duration = chrono::Duration::minutes(-2);
     let value = logs_c14
         .evaluations_timestamp
+        .entry(Tasks::C14)
+        .or_insert_with(Default::default)
         .iter()
-        .filter_map(|m| match m {
-            ((task, timestamp), value) if *task == Tasks::C14 && *timestamp >= now + duration => {
-                Some(value)
-            }
-            _ => None,
-        })
-        .all(|v| *v);
+        .rev()
+        .take_while(|(timestamp, _)| *timestamp >= now + duration)
+        .all(|(_, value)| *value);
+
     println!("R7: {}", value);
     let evaluation = Evaluation::new(value, index);
     logs_c14.insert_evaluation(evaluation.clone(), Tasks::R7);
@@ -939,14 +934,12 @@ where
         .all(|t| {
             logs_r1
                 .evaluations_timestamp
+                .entry(t.clone())
+                .or_insert_with(Default::default)
                 .iter()
-                .filter_map(|m| match m {
-                    ((task, timestamp), value) if *task == *t && *timestamp >= now + duration => {
-                        Some(value)
-                    }
-                    _ => None,
-                })
-                .all(|v| *v)
+                .rev()
+                .take_while(|(timestamp, _)| *timestamp >= now + duration)
+                .all(|(_, value)| *value)
         });
     let evaluation = Evaluation::new(value, index);
     logs_r1.insert_evaluation(evaluation.clone(), Tasks::P1);
@@ -965,14 +958,12 @@ where
     let value = [Tasks::R6, Tasks::R7].iter().all(|t| {
         logs_r6
             .evaluations_timestamp
+            .entry(t.clone())
+            .or_insert_with(Default::default)
             .iter()
-            .filter_map(|m| match m {
-                ((task, timestamp), value) if *task == *t && *timestamp >= now + duration => {
-                    Some(value)
-                }
-                _ => None,
-            })
-            .all(|v| *v)
+            .rev()
+            .take_while(|(timestamp, _)| *timestamp >= now + duration)
+            .all(|(_, value)| *value)
     });
     let evaluation = Evaluation::new(value, index);
     logs_r6.insert_evaluation(evaluation.clone(), Tasks::P2);
@@ -991,14 +982,12 @@ where
     let value = [Tasks::R6, Tasks::R7].iter().all(|t| {
         logs_r6
             .evaluations_timestamp
+            .entry(t.clone())
+            .or_insert_with(Default::default)
             .iter()
-            .filter_map(|m| match m {
-                ((task, timestamp), value) if *task == *t && *timestamp >= now + duration => {
-                    Some(value)
-                }
-                _ => None,
-            })
-            .all(|v| *v)
+            .rev()
+            .take_while(|(timestamp, _)| *timestamp >= now + duration)
+            .all(|(_, value)| *value)
     });
     let evaluation = Evaluation::new(value, index);
     logs_r6.insert_evaluation(evaluation.clone(), Tasks::P3);

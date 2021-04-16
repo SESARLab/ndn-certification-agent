@@ -1,7 +1,7 @@
 use crate::command;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::hash::Hash;
 use thiserror::Error as ThisError;
 
@@ -57,11 +57,27 @@ where
     Metrics: Hash + Eq,
     Tasks: Hash + Eq,
 {
-    pub measurements_index: HashMap<(Metrics, u64), Data>,
-    pub measurements_timestamp: HashMap<(Metrics, DateTime<Utc>), Data>,
-    pub evaluations_index: HashMap<(Tasks, u64), bool>,
-    pub evaluations_timestamp: HashMap<(Tasks, DateTime<Utc>), bool>,
+    pub measurements_index: HashMap<Metrics, VecDeque<(u64, Data)>>,
+    pub measurements_timestamp: HashMap<Metrics, VecDeque<(DateTime<Utc>, Data)>>,
+    pub evaluations_index: HashMap<Tasks, VecDeque<(u64, bool)>>,
+    pub evaluations_timestamp: HashMap<Tasks, VecDeque<(DateTime<Utc>, bool)>>,
     pub duration_index: HashMap<u64, i64>,
+}
+
+impl<Metrics, Tasks, Data> Default for Logs<Metrics, Tasks, Data>
+where
+    Metrics: Hash + Eq,
+    Tasks: Hash + Eq,
+{
+    fn default() -> Self {
+        Logs {
+            measurements_index: HashMap::default(),
+            measurements_timestamp: HashMap::default(),
+            evaluations_index: HashMap::default(),
+            evaluations_timestamp: HashMap::default(),
+            duration_index: HashMap::default(),
+        }
+    }
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -75,22 +91,6 @@ where
     pub evaluations_index: HashMap<Tasks, HashMap<u64, bool>>,
     pub evaluations_timestamp: HashMap<Tasks, HashMap<DateTime<Utc>, bool>>,
     pub duration_index: HashMap<u64, i64>,
-}
-
-impl<Metrics, Tasks, Data> Default for Logs<Metrics, Tasks, Data>
-where
-    Metrics: Hash + Eq,
-    Tasks: Hash + Eq,
-{
-    fn default() -> Self {
-        Logs {
-            measurements_index: Default::default(),
-            measurements_timestamp: Default::default(),
-            evaluations_index: Default::default(),
-            evaluations_timestamp: Default::default(),
-            duration_index: Default::default(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -111,12 +111,14 @@ where
         metric: Metrics,
     ) -> Logs<Metrics, Tasks, Data> {
         let mut res = self.clone();
-        res.measurements_index.insert(
-            (metric.clone(), measurement.index),
-            measurement.data.clone(),
-        );
+        res.measurements_index
+            .entry(metric.clone())
+            .or_insert_with(Default::default)
+            .push_back((measurement.index, measurement.data.clone()));
         res.measurements_timestamp
-            .insert((metric, measurement.timestamp), measurement.data);
+            .entry(metric)
+            .or_insert_with(Default::default)
+            .push_back((measurement.timestamp, measurement.data));
         res
     }
 
@@ -125,12 +127,14 @@ where
         measurement: Measurement<Data>,
         metric: Metrics,
     ) -> &mut Self {
-        self.measurements_index.insert(
-            (metric.clone(), measurement.index),
-            measurement.data.clone(),
-        );
+        self.measurements_index
+            .entry(metric.clone())
+            .or_insert_with(Default::default)
+            .push_back((measurement.index, measurement.data.clone()));
         self.measurements_timestamp
-            .insert((metric, measurement.timestamp), measurement.data);
+            .entry(metric)
+            .or_insert_with(Default::default)
+            .push_back((measurement.timestamp, measurement.data));
         self
     }
 
@@ -141,17 +145,25 @@ where
     ) -> Logs<Metrics, Tasks, Data> {
         let mut res = self.clone();
         res.evaluations_index
-            .insert((task.clone(), evaluation.index), evaluation.value);
+            .entry(task.clone())
+            .or_insert_with(Default::default)
+            .push_back((evaluation.index, evaluation.value));
         res.evaluations_timestamp
-            .insert((task, evaluation.timestamp), evaluation.value);
+            .entry(task)
+            .or_insert_with(Default::default)
+            .push_back((evaluation.timestamp, evaluation.value));
         res
     }
 
     pub fn insert_evaluation(&mut self, evaluation: Evaluation, task: Tasks) -> &mut Self {
         self.evaluations_index
-            .insert((task.clone(), evaluation.index), evaluation.value);
+            .entry(task.clone())
+            .or_insert_with(Default::default)
+            .push_back((evaluation.index, evaluation.value));
         self.evaluations_timestamp
-            .insert((task, evaluation.timestamp), evaluation.value);
+            .entry(task)
+            .or_insert_with(Default::default)
+            .push_back((evaluation.timestamp, evaluation.value));
         self
     }
 
@@ -167,104 +179,138 @@ where
     }
 
     pub fn merge(&self, other: &Self) -> Self {
-        let mut measurements_index = self.measurements_index.clone();
-        measurements_index.extend(
-            other
-                .measurements_index
-                .iter()
-                .map(|(k, v)| (k.clone(), v.clone())),
-        );
-        let mut measurements_timestamp = self.measurements_timestamp.clone();
-        measurements_timestamp.extend(
-            other
-                .measurements_timestamp
-                .iter()
-                .map(|(k, v)| (k.clone(), v.clone())),
-        );
-        let mut evaluations_index = self.evaluations_index.clone();
-        evaluations_index.extend(other.evaluations_index.iter().map(|(k, v)| (k.clone(), *v)));
-        let mut evaluations_timestamp = self.evaluations_timestamp.clone();
-        evaluations_timestamp.extend(
-            other
-                .evaluations_timestamp
-                .iter()
-                .map(|(k, v)| (k.clone(), *v)),
-        );
-        let mut duration_index = self.duration_index.clone();
-        duration_index.extend(other.duration_index.iter().map(|(k, v)| (*k, *v)));
-
-        Self {
-            measurements_index,
-            measurements_timestamp,
-            evaluations_index,
-            evaluations_timestamp,
-            duration_index,
-        }
+        let mut res = self.clone();
+        res.mut_merge(other);
+        res
     }
 
     pub fn mut_merge(&mut self, other: &Self) -> &mut Self {
-        self.measurements_index.extend(
-            other
+        for (metric, entry) in other.measurements_index.iter() {
+            let metric_measurements = self
                 .measurements_index
-                .iter()
-                .map(|(k, v)| (k.clone(), v.clone())),
-        );
-        self.measurements_timestamp.extend(
-            other
+                .entry(metric.clone())
+                .or_insert_with(Default::default);
+            let self_back_index = metric_measurements.back().map(|v| v.0);
+            let other_back_index = entry.back().map(|v| v.0);
+            match (self_back_index, other_back_index) {
+                (Some(s), Some(o)) if s < o => {
+                    let new_data = entry
+                        .iter()
+                        .rev()
+                        .take_while(|(o, _)| s < *o)
+                        .cloned()
+                        .collect::<Vec<_>>();
+                    metric_measurements.extend(new_data.iter().rev().cloned());
+                }
+                (None, Some(_)) => *metric_measurements = entry.clone(),
+                _ => {}
+            }
+        }
+        for (metric, entry) in other.measurements_timestamp.iter() {
+            let metric_measurements = self
                 .measurements_timestamp
-                .iter()
-                .map(|(k, v)| (k.clone(), v.clone())),
-        );
-        self.evaluations_index
-            .extend(other.evaluations_index.iter().map(|(k, v)| (k.clone(), *v)));
-        self.evaluations_timestamp.extend(
-            other
+                .entry(metric.clone())
+                .or_insert_with(Default::default);
+            let self_back_timestamp = metric_measurements.back().map(|v| v.0);
+            let other_back_timestamp = entry.back().map(|v| v.0);
+            match (self_back_timestamp, other_back_timestamp) {
+                (Some(s), Some(o)) if s < o => {
+                    let new_data = entry
+                        .iter()
+                        .rev()
+                        .take_while(|(o, _)| s < *o)
+                        .cloned()
+                        .collect::<Vec<_>>();
+                    metric_measurements.extend(new_data.iter().rev().cloned());
+                }
+                (None, Some(_)) => *metric_measurements = entry.clone(),
+                _ => {}
+            }
+        }
+        for (metric, entry) in other.evaluations_index.iter() {
+            let task_evaluations = self
+                .evaluations_index
+                .entry(metric.clone())
+                .or_insert_with(Default::default);
+            let self_back_index = task_evaluations.back().map(|v| v.0);
+            let other_back_index = entry.back().map(|v| v.0);
+            match (self_back_index, other_back_index) {
+                (Some(s), Some(o)) if s < o => {
+                    let new_data = entry
+                        .iter()
+                        .rev()
+                        .take_while(|(o, _)| s < *o)
+                        .cloned()
+                        .collect::<Vec<_>>();
+                    task_evaluations.extend(new_data.iter().rev().cloned());
+                }
+                (None, Some(_)) => *task_evaluations = entry.clone(),
+                _ => {}
+            }
+        }
+        for (metric, entry) in other.evaluations_timestamp.iter() {
+            let task_evaluations = self
                 .evaluations_timestamp
-                .iter()
-                .map(|(k, v)| (k.clone(), *v)),
-        );
+                .entry(metric.clone())
+                .or_insert_with(Default::default);
+            let self_back_timestamp = task_evaluations.back().map(|v| v.0);
+            let other_back_timestamp = entry.back().map(|v| v.0);
+            match (self_back_timestamp, other_back_timestamp) {
+                (Some(s), Some(o)) if s < o => {
+                    let new_data = entry
+                        .iter()
+                        .rev()
+                        .take_while(|(o, _)| s < *o)
+                        .cloned()
+                        .collect::<Vec<_>>();
+                    task_evaluations.extend(new_data.iter().rev().cloned());
+                }
+                (None, Some(_)) => *task_evaluations = entry.clone(),
+                _ => {}
+            }
+        }
         self.duration_index
             .extend(other.duration_index.iter().map(|(k, v)| (*k, *v)));
         self
     }
 
     pub fn to_table(&self) -> Table<Metrics, Tasks, Data> {
-        let measurements_index = self.measurements_index.iter().fold(
-            HashMap::new(),
-            |mut acc, ((measurement, index), data)| {
-                let entry = acc.entry(measurement.clone()).or_insert_with(HashMap::new);
-                entry.insert(*index, data.clone());
-                acc
-            },
-        );
-
-        let measurements_timestamp = self.measurements_timestamp.iter().fold(
-            HashMap::new(),
-            |mut acc, ((measurement, timestamp), data)| {
-                let entry = acc.entry(measurement.clone()).or_insert_with(HashMap::new);
-                entry.insert(*timestamp, data.clone());
-                acc
-            },
-        );
-
-        let evaluations_index = self.evaluations_index.iter().fold(
-            HashMap::new(),
-            |mut acc, ((task, index), value)| {
-                let entry = acc.entry(task.clone()).or_insert_with(HashMap::new);
-                entry.insert(*index, *value);
-                acc
-            },
-        );
-
-        let evaluations_timestamp = self.evaluations_timestamp.iter().fold(
-            HashMap::new(),
-            |mut acc, ((task, timestamp), value)| {
-                let entry = acc.entry(task.clone()).or_insert_with(HashMap::new);
-                entry.insert(*timestamp, *value);
-                acc
-            },
-        );
-
+        let measurements_index = self
+            .measurements_index
+            .iter()
+            .map(|(measurement, entries)| {
+                let k = measurement.clone();
+                let v = entries.iter().cloned().collect::<HashMap<_, _>>();
+                (k, v)
+            })
+            .collect();
+        let measurements_timestamp = self
+            .measurements_timestamp
+            .iter()
+            .map(|(measurement, entries)| {
+                let k = measurement.clone();
+                let v = entries.iter().cloned().collect::<HashMap<_, _>>();
+                (k, v)
+            })
+            .collect();
+        let evaluations_index = self
+            .evaluations_index
+            .iter()
+            .map(|(measurement, entries)| {
+                let k = measurement.clone();
+                let v = entries.iter().cloned().collect::<HashMap<_, _>>();
+                (k, v)
+            })
+            .collect();
+        let evaluations_timestamp = self
+            .evaluations_timestamp
+            .iter()
+            .map(|(measurement, entries)| {
+                let k = measurement.clone();
+                let v = entries.iter().cloned().collect::<HashMap<_, _>>();
+                (k, v)
+            })
+            .collect();
         Table {
             measurements_index,
             measurements_timestamp,
@@ -276,3 +322,58 @@ where
 }
 
 pub use crate::command::nfdc::PacketStatistics;
+
+#[cfg(test)]
+mod tests {
+    use crate::task::*;
+
+    #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+    enum Metrics {
+        M1,
+    }
+
+    #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+    enum Tasks {
+        R1,
+    }
+
+    #[derive(Debug, PartialEq, Clone)]
+    enum Data {
+        M1(u64),
+    }
+
+    #[test]
+    fn test_insert_mut_merge() {
+        let mut log1: Logs<Metrics, Tasks, Data> = Logs::default();
+        log1.insert_measurement(Measurement::new(Data::M1(0), 0), Metrics::M1);
+        let m1 = Measurement::new(Data::M1(1), 1);
+        log1.insert_measurement(m1.clone(), Metrics::M1);
+        log1.insert_evaluation(Evaluation::new(true, 0), Tasks::R1);
+        log1.insert_evaluation(Evaluation::new(true, 1), Tasks::R1);
+
+        let mut log2: Logs<Metrics, Tasks, Data> = Logs::default();
+        log2.insert_measurement(m1, Metrics::M1);
+        log2.insert_measurement(Measurement::new(Data::M1(2), 2), Metrics::M1);
+        log2.insert_measurement(Measurement::new(Data::M1(3), 3), Metrics::M1);
+        log2.insert_evaluation(Evaluation::new(false, 2), Tasks::R1);
+        log2.insert_evaluation(Evaluation::new(false, 3), Tasks::R1);
+
+        println!("{:#?}", log1);
+        println!("{:#?}", log2);
+
+        log1.mut_merge(&log2);
+
+        // println!("{:#?}", log1.merge(&log2));
+        println!("{:#?}", log1);
+        assert_eq!(log1.measurements_index[&Metrics::M1].len(), 4);
+        assert_eq!(log1.measurements_timestamp[&Metrics::M1].len(), 4);
+        assert_eq!(
+            log1.measurements_index[&Metrics::M1]
+                .iter()
+                .map(|(i, _)| i)
+                .cloned()
+                .collect::<Vec<_>>(),
+            [0, 1, 2, 3]
+        );
+    }
+}
