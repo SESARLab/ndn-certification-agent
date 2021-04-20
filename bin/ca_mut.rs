@@ -242,8 +242,8 @@ where
     let data = Data::M5(
         res.strategy_choices
             .strategy_choice
-            .iter()
-            .map(|sc| (sc.namespace.clone(), sc.strategy.name.clone()))
+            .into_iter()
+            .map(|sc| (sc.namespace, sc.strategy.name))
             .collect(),
     );
     let measurement = Measurement::new(data, index);
@@ -263,7 +263,7 @@ where
     let data = Data::M6(
         res.faces
             .face
-            .iter()
+            .into_iter()
             .map(|f| {
                 (
                     f.face_id,
@@ -291,8 +291,8 @@ where
     let data = Data::M7(
         res.faces
             .face
-            .iter()
-            .map(|f| (f.face_id, f.interest_packet_size.clone()))
+            .into_iter()
+            .map(|f| (f.face_id, f.interest_packet_size))
             .collect(),
     );
     let measurement = Measurement::new(data, index);
@@ -312,8 +312,8 @@ where
     let data = Data::M8(
         res.faces
             .face
-            .iter()
-            .map(|f| (f.face_id, f.data_packet_size.clone()))
+            .into_iter()
+            .map(|f| (f.face_id, f.data_packet_size))
             .collect(),
     );
     let measurement = Measurement::new(data, index);
@@ -333,8 +333,8 @@ where
     let data = Data::M9(
         res.faces
             .face
-            .iter()
-            .map(|f| (f.face_id, f.interest_packet_components.clone()))
+            .into_iter()
+            .map(|f| (f.face_id, f.interest_packet_components))
             .collect(),
     );
     let measurement = Measurement::new(data, index);
@@ -354,8 +354,8 @@ where
     let data = Data::M10(
         res.faces
             .face
-            .iter()
-            .map(|f| (f.face_id, f.data_packet_components.clone()))
+            .into_iter()
+            .map(|f| (f.face_id, f.data_packet_components))
             .collect(),
     );
     let measurement = Measurement::new(data, index);
@@ -376,8 +376,8 @@ where
     let certificate_info: Vec<(String, ndnsec::dump::CertificateInfo)> = try_join_all(
         certificate_list
             .certificates
-            .iter()
-            .map(|c| c.identity.clone())
+            .into_iter()
+            .map(|c| c.identity)
             .map(|i| async {
                 match ndnsec_info(i.clone()).timeout(TIMEOUT).await {
                     Err(t) => Err(Error::TimeoutError(t)),
@@ -389,8 +389,8 @@ where
     .await?;
     let data = Data::M11(
         certificate_info
-            .iter()
-            .map(|(i, d)| (i.clone(), (d.validity_not_before, d.validity_not_after)))
+            .into_iter()
+            .map(|(i, d)| (i, (d.validity_not_before, d.validity_not_after)))
             .collect(),
     );
     let measurement = Measurement::new(data, index);
@@ -409,10 +409,10 @@ where
     let res: ndnsec::list::CertificateList = certificate_list_f.timeout(TIMEOUT).await??;
     let data = Data::M12(
         res.certificates
-            .iter()
+            .into_iter()
             .filter_map(|c| {
                 if c.is_default {
-                    Some(c.certificate.clone())
+                    Some(c.certificate)
                 } else {
                     None
                 }
@@ -541,10 +541,11 @@ where
                 .filter_map(|e| if let Data::M3(v) = e.1 { Some(v) } else { None })
                 .collect::<Vec<_>>();
             let mean = cs_usages.iter().sum::<u64>() as f64 / cs_usages.len() as f64;
+            let n_entries = cs_usages.len();
             let std_dev = (cs_usages
-                .iter()
-                .fold(0_f64, |acc, new| acc + (*new as f64 - mean).powi(2))
-                / (cs_usages.len() as u64 - 1) as f64)
+                .into_iter()
+                .fold(0_f64, |acc, new| acc + (new as f64 - mean).powi(2))
+                / (n_entries as u64 - 1) as f64)
                 .sqrt();
             // println!("C5 std: {}", std_dev);
             // Finally check if std_dev across measurements is less than 5.0
