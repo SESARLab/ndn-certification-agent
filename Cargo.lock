@@ -627,7 +627,7 @@ dependencies = [
 
 [[package]]
 name = "ndn-certification-agent"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "async-std",
  "async-trait",

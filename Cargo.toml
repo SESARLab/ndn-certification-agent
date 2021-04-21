@@ -1,6 +1,6 @@
 [package]
 name = "ndn-certification-agent"
-version = "1.0.1"
+version = "1.1.0"
 authors = ["Filippo Berto <berto.f@protonmail.com>"]
 edition = "2018"
 
@@ -24,6 +24,6 @@ sysinfo = "0.16"
 url = {version= "2.2", features = ["serde"]}
 
 [[bin]]
-name = "ca_mut"
-path = "bin/ca_mut.rs"
+name = "ca"
+path = "bin/ca.rs"
 

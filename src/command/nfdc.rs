@@ -230,6 +230,8 @@ pub struct Cs {
     pub max_size: u64,
     pub average_size: f64,
     pub std_dev_size: f64,
+    pub valid_signature_packets: u64,
+    pub invalid_signature_packets: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

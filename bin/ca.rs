@@ -87,6 +87,10 @@ enum Data {
     ///
     /// The total amount of system memory of the NFD node
     M13(u64),
+    /// CS packet signature statistics
+    ///
+    /// Number of valid and invalid signatures found in CS stored packets
+    M14(u64, u64),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -104,6 +108,7 @@ enum Metrics {
     M11,
     M12,
     M13,
+    M14,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -122,6 +127,7 @@ enum Tasks {
     C12,
     C13,
     C14,
+    C15,
 
     R1,
     R2,
@@ -130,6 +136,7 @@ enum Tasks {
     R5,
     R6,
     R7,
+    R8,
 
     P1,
     P2,
@@ -439,6 +446,24 @@ where
     Ok(Logging(measurement, logs))
 }
 
+async fn m14<D1>(
+    nfd_status_f: D1,
+    index: u64,
+    mut logs: Logs<Metrics, Tasks, Data>,
+) -> MeasurementResult
+where
+    D1: Future<Output = Result<nfdc::NfdcStatus, Error>>,
+{
+    let res: nfdc::NfdcStatus = nfd_status_f.timeout(TIMEOUT).await??;
+    let data = Data::M14(
+        res.cs.valid_signature_packets,
+        res.cs.invalid_signature_packets,
+    );
+    let measurement = Measurement::new(data, index);
+    logs.insert_measurement(measurement.clone(), Metrics::M14);
+    Ok(Logging(measurement, logs))
+}
+
 async fn c1<M1>(m1: M1, index: u64) -> EvaluationResult
 where
     M1: Future<Output = MeasurementResult>,
@@ -721,6 +746,23 @@ where
     Ok(Logging(evaluation, logs_m12))
 }
 
+async fn c15<M14>(m14: M14, index: u64) -> EvaluationResult
+where
+    M14: Future<Output = MeasurementResult>,
+{
+    let Logging(meas_14, mut logs_m14) = m14.await?;
+    let value = match meas_14.data {
+        Data::M14(_valid, invalid) => Ok(invalid == 0),
+        _ => Err(Error::EvaluationError(
+            "Wrong dependency task provided".to_string(),
+        )),
+    }?;
+    println!("C15: {}", value);
+    let evaluation = Evaluation::new(value, index);
+    logs_m14.insert_evaluation(evaluation.clone(), Tasks::C15);
+    Ok(Logging(evaluation, logs_m14))
+}
+
 async fn r1<C1, C2, C3>(c1: C1, c2: C2, c3: C3, index: u64) -> EvaluationResult
 where
     C1: Future<Output = EvaluationResult>,
@@ -901,6 +943,29 @@ where
     Ok(Logging(evaluation, logs_c14))
 }
 
+async fn r8<C15>(c15: C15, index: u64) -> EvaluationResult
+where
+    C15: Future<Output = EvaluationResult>,
+{
+    let Logging(_eval_c15, mut logs_c15) = c15.await?;
+    // println!("DEPS R7: {:#?}", _eval_c15);
+    let now = Utc::now();
+    let duration = chrono::Duration::minutes(-2);
+    let value = logs_c15
+        .evaluations_timestamp
+        .entry(Tasks::C15)
+        .or_insert_with(Default::default)
+        .iter()
+        .rev()
+        .take_while(|(timestamp, _)| *timestamp >= now + duration)
+        .all(|(_, value)| *value);
+
+    println!("R8: {}", value);
+    let evaluation = Evaluation::new(value, index);
+    logs_c15.insert_evaluation(evaluation.clone(), Tasks::R8);
+    Ok(Logging(evaluation, logs_c15))
+}
+
 async fn p1<R1, R2, R3, R4, R5>(
     r1: R1,
     r2: R2,
@@ -942,6 +1007,7 @@ where
                 .take_while(|(timestamp, _)| *timestamp >= now + duration)
                 .all(|(_, value)| *value)
         });
+    println!("P1: {}", value);
     let evaluation = Evaluation::new(value, index);
     logs_r1.insert_evaluation(evaluation.clone(), Tasks::P1);
     Ok(Logging(evaluation, logs_r1))
@@ -966,21 +1032,24 @@ where
             .take_while(|(timestamp, _)| *timestamp >= now + duration)
             .all(|(_, value)| *value)
     });
+    println!("P2: {}", value);
     let evaluation = Evaluation::new(value, index);
     logs_r6.insert_evaluation(evaluation.clone(), Tasks::P2);
     Ok(Logging(evaluation, logs_r6))
 }
 
-async fn p3<R6, R7>(r6: R6, r7: R7, index: u64) -> EvaluationResult
+async fn p3<R6, R7, R8>(r6: R6, r7: R7, r8: R8, index: u64) -> EvaluationResult
 where
     R6: Future<Output = EvaluationResult>,
     R7: Future<Output = EvaluationResult>,
+    R8: Future<Output = EvaluationResult>,
 {
-    let (Logging(_, mut logs_r6), Logging(_, logs_r7)) = try_join(r6, r7).await?;
-    logs_r6.mut_merge(&logs_r7);
+    let (Logging(_, mut logs_r6), Logging(_, logs_r7), Logging(_, logs_r8)) =
+        try_join3(r6, r7, r8).await?;
+    logs_r6.mut_merge(&logs_r7).mut_merge(&logs_r8);
     let now = Utc::now();
     let duration = chrono::Duration::minutes(-2);
-    let value = [Tasks::R6, Tasks::R7].iter().all(|t| {
+    let value = [Tasks::R6, Tasks::R7, Tasks::R8].iter().all(|t| {
         logs_r6
             .evaluations_timestamp
             .entry(t.clone())
@@ -990,6 +1059,7 @@ where
             .take_while(|(timestamp, _)| *timestamp >= now + duration)
             .all(|(_, value)| *value)
     });
+    println!("P3: {}", value);
     let evaluation = Evaluation::new(value, index);
     logs_r6.insert_evaluation(evaluation.clone(), Tasks::P3);
     Ok(Logging(evaluation, logs_r6))
@@ -1030,7 +1100,7 @@ async fn main() {
         let m7_f = m7(nfd_status_f.clone(), index, logs.read().unwrap().clone()).shared();
         let m8_f = m8(nfd_status_f.clone(), index, logs.read().unwrap().clone()).shared();
         let m9_f = m9(nfd_status_f.clone(), index, logs.read().unwrap().clone()).shared();
-        let m10_f = m10(nfd_status_f, index, logs.read().unwrap().clone()).shared();
+        let m10_f = m10(nfd_status_f.clone(), index, logs.read().unwrap().clone()).shared();
         let m11_f = m11(
             certificate_list_f.clone(),
             index,
@@ -1039,6 +1109,7 @@ async fn main() {
         .shared();
         let m12_f = m12(certificate_list_f, index, logs.read().unwrap().clone()).shared();
         let m13_f = m13(host_total_memory_f, index, logs.read().unwrap().clone()).shared();
+        let m14_f = m14(nfd_status_f, index, logs.read().unwrap().clone()).shared();
 
         let c1_f = c1(m1_f, index).shared();
         let c2_f = c2(m2_f.clone(), m13_f.clone(), index).shared();
@@ -1054,6 +1125,7 @@ async fn main() {
         let c12_f = c12(m10_f, index).shared();
         let c13_f = c13(m11_f, index).shared();
         let c14_f = c14(m12_f, index).shared();
+        let c15_f = c15(m14_f, index).shared();
 
         let r1_f = r1(c1_f, c2_f, c3_f, index).shared();
         let r2_f = r2(c4_f, c5_f, c6_f, c7_f, index).shared();
@@ -1062,10 +1134,11 @@ async fn main() {
         let r5_f = r5(c11_f, c12_f, index).shared();
         let r6_f = r6(c13_f, index).shared();
         let r7_f = r7(c14_f, index).shared();
+        let r8_f = r8(c15_f, index).shared();
 
         let p1_f = p1(r1_f, r2_f, r3_f, r4_f, r5_f, index).shared();
         let p2_f = p2(r6_f.clone(), r7_f.clone(), index).shared();
-        let p3_f = p3(r6_f, r7_f, index).shared();
+        let p3_f = p3(r6_f, r7_f, r8_f, index).shared();
 
         match try_join3(p1_f, p2_f, p3_f).await {
             Ok(v) => {
