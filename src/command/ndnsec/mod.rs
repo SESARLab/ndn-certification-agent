@@ -12,11 +12,11 @@ pub enum NdnSecCommand {
 impl Command for NdnSecCommand {
     fn to_command(&self) -> Vec<OsString> {
         match self {
-            NdnSecCommand::List => ["ndnsec", "list", "-c"]
+            NdnSecCommand::List => ["/usr/bin/ndnsec", "list", "-c"]
                 .iter()
                 .map(OsString::from)
                 .collect(),
-            NdnSecCommand::Dump(identity) => ["ndnsec", "cert-dump", "-p", "-i", identity.as_str()]
+            NdnSecCommand::Dump(identity) => ["/usr/bin/ndnsec", "cert-dump", "-p", "-i", identity.as_str()]
                 .iter()
                 .map(OsString::from)
                 .collect(),

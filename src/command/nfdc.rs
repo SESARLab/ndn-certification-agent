@@ -11,7 +11,7 @@ pub enum NfdcCommand {
 impl Command for NfdcCommand {
     fn to_command(&self) -> Vec<OsString> {
         match self {
-            NfdcCommand::Status => ["nfdc", "status", "report", "xml"],
+            NfdcCommand::Status => ["/usr/bin/nfdc", "status", "report", "xml"],
         }
         .iter()
         .map(OsString::from)

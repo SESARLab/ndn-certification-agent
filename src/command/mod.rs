@@ -43,8 +43,9 @@ pub trait Command {
     fn to_command(&self) -> Vec<OsString>;
     async fn run(&self) -> Result<String, Error> {
         let args = self.to_command();
-        let res: process::Output = process::Command::new("/bin/env")
-            .args(args)
+        let cmd = args.first().ok_or_else(||Error::OutputError("Invalid command".to_string()))?;
+        let res: process::Output = process::Command::new(cmd)
+            .args(args.iter().skip(1))
             .output()
             .await?;
         if res.status.success() {
